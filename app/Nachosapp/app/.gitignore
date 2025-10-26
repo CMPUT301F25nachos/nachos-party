@@ -1,0 +1,26 @@
+# Built application files
+/build
+
+# Google services configuration
+/google-services.json
+
+# Local properties file (contains SDK path and other sensitive info)
+local.properties
+
+# Keystore files
+*.jks
+*.keystore
+
+# Crashlytics files
+crashlytics.properties
+crashlytics-build.properties
+
+# IDE files
+.idea/
+*.iml
+.gradle/
+gradle/
+.DS_Store
+
+# Log files
+*.log
