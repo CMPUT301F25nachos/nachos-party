@@ -31,7 +31,6 @@ public class RegistrationActivity extends AppCompatActivity {
 
         Button registerButton = findViewById(R.id.registerButton);
         registerButton.setOnClickListener(v -> {
-            // TODO: Add registration logic here
             String name = nameEditText.getText().toString().trim();
             String email = emailEditText.getText().toString().trim();
             String phoneNumber = phoneEditText.getText().toString().trim();
