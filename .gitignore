@@ -32,7 +32,12 @@ local.properties
 ### Gradle ###
 .gradle/
 build/
-gradle/
+
+# ⚠️ KEEP the gradle folder for version catalogs
+!gradle/
+gradle/wrapper/gradle-wrapper.properties
+gradle/wrapper/gradle-wrapper.jar
+
 gradlew
 gradlew.bat
 
