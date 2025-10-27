@@ -1,5 +1,6 @@
 package com.example.nachos_app.ui.profile;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,12 +8,17 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.nachos_app.EditProfileActivity;
 import com.example.nachos_app.databinding.FragmentProfileBinding;
 
+/**
+ * This fragment displays the user's profile information, including their name, email, and phone number.
+ * It uses a ProfileViewModel to observe and display the user's data from Firestore in real-time. It also
+ * provides a settings button that launches the EditProfileActivity, allowing the user to modify their details.
+ */
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
@@ -31,6 +37,12 @@ public class ProfileFragment extends Fragment {
 
         final TextView phoneTextView = binding.phoneTextView;
         profileViewModel.getPhone().observe(getViewLifecycleOwner(), phoneTextView::setText);
+
+        // Add the click listener to the settings button
+        binding.settingsButton.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), EditProfileActivity.class);
+            startActivity(intent);
+        });
 
         return root;
     }
