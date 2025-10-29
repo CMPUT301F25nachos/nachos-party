@@ -36,12 +36,13 @@ public class EditProfileActivity extends AppCompatActivity {
         phoneEditText = findViewById(R.id.phoneEditText);
 
         if (currentUser != null) {
-            db.collection("users").document(currentUser.getUid()).get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            nameEditText.setText(documentSnapshot.getString("name"));
-                            emailEditText.setText(documentSnapshot.getString("email"));
-                            phoneEditText.setText(documentSnapshot.getString("phoneNumber"));
+            db.collection("users").document(currentUser.getUid())
+                    .get().addOnSuccessListener(snapshot -> {
+                        User user = snapshot.toObject(User.class);
+                        if (user != null) {
+                            nameEditText.setText(user.getName());
+                            emailEditText.setText(user.getEmail());
+                            phoneEditText.setText(user.getPhoneNumber());
                         }
                     });
         }

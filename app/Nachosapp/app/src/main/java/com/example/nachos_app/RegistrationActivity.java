@@ -13,8 +13,6 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This activity handles user registration. It collects the user's name, email, and optional phone number,
@@ -72,24 +70,16 @@ public class RegistrationActivity extends AppCompatActivity {
                             FirebaseUser user = mAuth.getCurrentUser();
                             if (user != null) {
                                 String userId = user.getUid();
-                                Map<String, Object> userData = new HashMap<>();
-                                userData.put("name", name);
-                                userData.put("email", email);
-                                if (!phone.isEmpty()) {
-                                    userData.put("phoneNumber", phone);
-                                }
-                                userData.put("createdAt", new Date());
+                                User userObj = new User(name, email, phone, new Date());
 
                                 // 2. Save the user's data to Firestore using the unique user ID
                                 db.collection("users").document(userId)
-                                        .set(userData)
+                                        .set(userObj)
                                         .addOnSuccessListener(aVoid -> {
-                                            // 3. On success, navigate to the main activity
-                                            Intent intent = new Intent(RegistrationActivity.this, MainActivity.class);
-                                            startActivity(intent);
+                                            startActivity(new Intent(this, MainActivity.class));
                                             finish(); // Prevent user from going back to registration
                                         })
-                                        .addOnFailureListener(e -> Toast.makeText(RegistrationActivity.this, "Error saving user data.", Toast.LENGTH_SHORT).show());
+                                        .addOnFailureListener(e -> Toast.makeText(this, "Error saving user data.", Toast.LENGTH_SHORT).show());
                             }
                         } else {
                             Toast.makeText(RegistrationActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
