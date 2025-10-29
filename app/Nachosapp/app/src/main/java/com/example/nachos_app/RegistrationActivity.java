@@ -76,6 +76,7 @@ public class RegistrationActivity extends AppCompatActivity {
                                 db.collection("users").document(userId)
                                         .set(userObj)
                                         .addOnSuccessListener(aVoid -> {
+                                            // 3. On success, navigate to the main activity
                                             startActivity(new Intent(this, MainActivity.class));
                                             finish(); // Prevent user from going back to registration
                                         })
