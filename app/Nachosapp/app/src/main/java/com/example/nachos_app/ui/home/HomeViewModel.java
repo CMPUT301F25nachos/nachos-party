@@ -51,21 +51,30 @@ public class HomeViewModel extends ViewModel {
         db.collection("events")
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get().addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Event> events = new ArrayList<>();
-                    List<String> eventIds = new ArrayList<>();
+                    List<Event> openEvents = new ArrayList<>();
+                    List<String> openIds = new ArrayList<>();
+                    List<Event> upcomingEvents = new ArrayList<>();
+                    List<String> upcomingIds = new ArrayList<>();
 
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Event event = document.toObject(Event.class);
 
                         // Only show events with open registration
                         if (event.isRegistrationOpen()) {
-                            events.add(event);
-                            eventIds.add(document.getId());
+                            if (!event.isWaitlistFull()) {
+                                openEvents.add(event);
+                                openIds.add(document.getId());
+                            }
+                        } else if (event.isRegistrationUpcoming()) {
+                            upcomingEvents.add(event);
+                            upcomingIds.add(document.getId());
                         }
                     }
 
-                    mEvents.setValue(events);
-                    mEventIds.setValue(eventIds);
+                    openEvents.addAll(upcomingEvents);
+                    openIds.addAll(upcomingIds);
+                    mEvents.setValue(openEvents);
+                    mEventIds.setValue(openIds);
                     mLoading.setValue(false);
                 }).addOnFailureListener(e -> {
                     mError.setValue("Failed to load events: " + e.getMessage());
