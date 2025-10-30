@@ -74,6 +74,12 @@ public class Event {
     // Check if registration is open
     public boolean isRegistrationOpen() {
         Date now = new Date();
-        return now.before(registrationEndDate);
+        return now.after(registrationStartDate) && now.before(registrationEndDate);
+    }
+
+    // Check if registration is upcoming
+    public boolean isRegistrationUpcoming() {
+        Date now = new Date();
+        return now.before(registrationStartDate);
     }
 }
