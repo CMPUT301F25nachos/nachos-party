@@ -30,13 +30,11 @@
         </activity>
         <activity android:name=".EditProfileActivity" />
         <activity
-            android:name=".CreateEventActivity"
-            android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:name=".CreateEventActivity" />
         <activity
-            android:name=".EventDetailsActivity"
-            android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:name=".EventDetailsActivity" />
+        <activity android:name=".EntrantListActivity" />
+        <activity android:name=".DrawLotteryActivity" />
 
     </application>
 

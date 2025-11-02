@@ -1,8 +1,10 @@
 package com.example.nachos_app;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -10,7 +12,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -21,29 +22,45 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * Displays details for a specific event selected by the user.
- * Fetches data from Firestore using the eventId passed via Intent.
- */
 public class EventDetailsActivity extends AppCompatActivity {
 
     private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
+    // Entrant views
     private ImageView bannerImage;
     private TextView titleText;
     private TextView dateText;
     private TextView spotsText;
-    private TextView entrantsText;
     private TextView registrationPeriodText;
     private TextView descriptionText;
-    private MaterialButton joinButton;
+    private Button joinButton;
+    private Button showQRCodeButton;
+
+    // Organizer views
+    private View organizerSection;
+    private TextView statusText;
+    private TextView waitingCountText;
+    private TextView selectedCountText;
+    private TextView enrolledCountText;
+    private TextView cancelledCountText;
+    private Button editEventButton;
+    private Button viewWaitingListButton;
+    private Button viewEnrolledButton;
+    private Button viewSelectedButton;
+    private Button viewCancelledButton;
+    private Button drawLotteryButton;
+    private Button sendNotificationButton;
+    private View organizerDivider;
 
     private FirebaseFirestore db;
-
     private String uid;
+    private String eventId;
     private DocumentReference eventRef;
     private DocumentReference waitListRef;
     private boolean isOnWaitlist = false;
+    private boolean isOrganizer = false;
+    private boolean isSelected = false;
+    private Event currentEvent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,37 +69,30 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         setupActionBar();
         initViews();
-        joinButton = findViewById(R.id.joinWaitlistButton);
+
         db = FirebaseFirestore.getInstance();
 
-        // get the current user
+        // Get the current user
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-        // currently here to fix null pointers, we're gonna have to figure this out later
-        if (user == null){
-            joinButton.setEnabled(false);
-            joinButton.setText("Sign in required");
+        if (user == null) {
+            finish();
+            return;
         }
         uid = user.getUid();
 
         // Retrieve eventId from Intent
-        String eventId = getIntent().getStringExtra("eventId");
+        eventId = getIntent().getStringExtra("eventId");
+        if (eventId == null) {
+            Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         eventRef = db.collection("events").document(eventId);
         waitListRef = eventRef.collection("waitlist").document(uid);
 
-
-        checkWaitlist();
-
-        joinButton.setOnClickListener(v -> {
-            if (isOnWaitlist){
-                leaveWaitlist(); // user is currently on waitlist
-            } else {
-                joinWaitlist(); // add user to waitlist
-            }
-        });
-
-        fetchEventDetails(eventId);
+        fetchEventDetails();
     }
 
     private void setupActionBar() {
@@ -93,20 +103,109 @@ public class EventDetailsActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        // Entrant views
         bannerImage = findViewById(R.id.eventBannerImageView);
         titleText = findViewById(R.id.eventTitleTextView);
         dateText = findViewById(R.id.eventDateTextView);
         spotsText = findViewById(R.id.eventSpotsTextView);
-        entrantsText = findViewById(R.id.eventEntrantsTextView);
         registrationPeriodText = findViewById(R.id.eventDrawPeriodTextView);
         descriptionText = findViewById(R.id.eventDescriptionTextView);
         joinButton = findViewById(R.id.joinWaitlistButton);
+        showQRCodeButton = findViewById(R.id.showQRCodeButton);
+
+        // Organizer views
+        organizerSection = findViewById(R.id.organizerSection);
+        organizerDivider = findViewById(R.id.organizerDivider);
+        statusText = findViewById(R.id.statusText);
+        waitingCountText = findViewById(R.id.waitingCountText);
+        selectedCountText = findViewById(R.id.selectedCountText);
+        enrolledCountText = findViewById(R.id.enrolledCountText);
+        cancelledCountText = findViewById(R.id.cancelledCountText);
+
+        editEventButton = findViewById(R.id.editEventButton);
+        viewWaitingListButton = findViewById(R.id.viewWaitingListButton);
+        viewEnrolledButton = findViewById(R.id.viewEnrolledButton);
+        viewSelectedButton = findViewById(R.id.viewSelectedButton);
+        viewCancelledButton = findViewById(R.id.viewCancelledButton);
+        drawLotteryButton = findViewById(R.id.drawLotteryButton);
+        sendNotificationButton = findViewById(R.id.sendNotificationButton);
+
+        // Initialize visibility - hide organizer section initially
+        organizerSection.setVisibility(View.GONE);
+        organizerDivider.setVisibility(View.GONE);
+        joinButton.setVisibility(View.GONE);
+
+        // Show QR Code button is visible to all users
+        showQRCodeButton.setOnClickListener(v -> showQRCodeDialog());
+
+        setupOrganizerButtons();
     }
 
-    private void fetchEventDetails(String eventId) {
-        db.collection("events")
-                .document(eventId)
-                .get()
+    private void setupOrganizerButtons() {
+        editEventButton.setOnClickListener(v -> {
+            Toast.makeText(this, "Edit event coming soon", Toast.LENGTH_SHORT).show();
+        });
+
+        viewWaitingListButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, EntrantListActivity.class);
+            intent.putExtra("eventId", eventId);
+            intent.putExtra("listType", "waitlist");
+            startActivity(intent);
+        });
+
+        viewEnrolledButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, EntrantListActivity.class);
+            intent.putExtra("eventId", eventId);
+            intent.putExtra("listType", "enrolled");
+            startActivity(intent);
+        });
+
+        viewSelectedButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, EntrantListActivity.class);
+            intent.putExtra("eventId", eventId);
+            intent.putExtra("listType", "selected");
+            startActivity(intent);
+        });
+
+        viewCancelledButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, EntrantListActivity.class);
+            intent.putExtra("eventId", eventId);
+            intent.putExtra("listType", "cancelled");
+            startActivity(intent);
+        });
+
+        drawLotteryButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, DrawLotteryActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
+        });
+
+        sendNotificationButton.setOnClickListener(v -> {
+            Toast.makeText(this, "Send notifications coming soon", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void showQRCodeDialog() {
+        if (currentEvent == null) {
+            Toast.makeText(this, "Event data not loaded", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String qrCodeBase64 = currentEvent.getQrCodeUrl();
+        if (qrCodeBase64 == null || qrCodeBase64.isEmpty()) {
+            Toast.makeText(this, "QR code not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        QRCodeDialogFragment dialog = QRCodeDialogFragment.newInstance(
+                currentEvent.getEventName(),
+                qrCodeBase64
+        );
+        dialog.show(getSupportFragmentManager(), "QRCodeDialog");
+    }
+
+    private void fetchEventDetails() {
+        eventRef.get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot == null || !snapshot.exists()) {
                         Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
@@ -120,43 +219,119 @@ public class EventDetailsActivity extends AppCompatActivity {
                         return;
                     }
 
+                    // Store current event for QR code display
+                    currentEvent = event;
+
+                    // Check if user is the organizer
+                    isOrganizer = event.getOrganizerId().equals(uid);
+
                     populateUI(event);
+
+                    if (isOrganizer) {
+                        showOrganizerView(event);
+                    } else {
+                        showEntrantView();
+                        checkWaitlist();
+                    }
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to load event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Failed to load event: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show()
                 );
     }
 
     private void populateUI(Event event) {
-        // Title
         titleText.setText(event.getEventName());
-
-        // Description
         descriptionText.setText(event.getDescription());
 
-        // Schedule
         String dateRange = event.getDateTimeRange();
         dateText.setText("Date and Time: " + dateRange);
 
-        // Spots and entrants
         Integer maxParticipants = event.getMaxParticipants();
         spotsText.setText("Total spots: " +
                 (maxParticipants != null ? maxParticipants : "Unlimited"));
 
-        entrantsText.setText("Total entrants: " + event.getCurrentWaitlistCount());
-
-        // Registration window
         setRegistrationText(event.getRegistrationStartDate(), event.getRegistrationEndDate());
 
-        // Banner image
         ImageUtils.loadBase64Image(
                 bannerImage,
                 event.getBannerUrl(),
                 R.drawable.ic_camera_placeholder
         );
+    }
 
-        // Button logic
-        //configureJoinButton(event);
+    private void showOrganizerView(Event event) {
+        // Hide join button for organizers
+        joinButton.setVisibility(View.GONE);
+
+        // Show divider and organizer section
+        organizerDivider.setVisibility(View.VISIBLE);
+        organizerSection.setVisibility(View.VISIBLE);
+
+        // Update status
+        boolean isOpen = event.isRegistrationOpen();
+        boolean isUpcoming = event.isRegistrationUpcoming();
+
+        String status = isOpen ? "Registration Open" :
+                (isUpcoming ? "Registration Upcoming" : "Registration Closed");
+        statusText.setText("Status: " + status);
+
+        // Get counts from subcollections
+        updateCounts();
+    }
+
+    private void updateCounts() {
+        // Waiting count
+        eventRef.collection("waitlist")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    waitingCountText.setText("Waiting: " + count);
+                    viewWaitingListButton.setText("View Waiting List (" + count + ")");
+                });
+
+        // Selected count
+        eventRef.collection("selected")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    selectedCountText.setText("Selected: " + count);
+                    viewSelectedButton.setText("View Selected Entrants (" + count + ")");
+                });
+
+        // Enrolled count
+        eventRef.collection("enrolled")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    enrolledCountText.setText("Enrolled: " + count);
+                    viewEnrolledButton.setText("View Enrolled Entrants (" + count + ")");
+                });
+
+        // Cancelled count
+        eventRef.collection("cancelled")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    cancelledCountText.setText("Cancelled: " + count);
+                    viewCancelledButton.setText("View Cancelled (" + count + ")");
+                });
+    }
+
+    private void showEntrantView() {
+        // Hide organizer section
+        organizerSection.setVisibility(View.GONE);
+
+        // Show join button
+        joinButton.setVisibility(View.VISIBLE);
+
+        joinButton.setOnClickListener(v -> {
+            if (isOnWaitlist) {
+                leaveWaitlist();
+            } else {
+                joinWaitlist();
+            }
+        });
     }
 
     private void setRegistrationText(Date start, Date end) {
@@ -165,108 +340,126 @@ public class EventDetailsActivity extends AppCompatActivity {
         registrationPeriodText.setText(text);
     }
 
-    /**private void configureJoinButton(Event event) {
-        boolean isOpen = event.isRegistrationOpen();
-        boolean isUpcoming = event.isRegistrationUpcoming();
-
-        if (isOpen) {
-            joinButton.setEnabled(true);
-            joinButton.setText("Join Waitlist");
-            // TODO: Add waiting list code here @Darius
-            joinButton.setOnClickListener(v ->
-                    Toast.makeText(this, "Joining coming soon", Toast.LENGTH_SHORT).show()
-            );
-        } else {
-            joinButton.setEnabled(false);
-            joinButton.setText("Registration is not open yet");
-            joinButton.setOnClickListener(null);
-        }
-    } */
-
-    private String defaultText(String value, String fallback) {
-        return TextUtils.isEmpty(value) ? fallback : value;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * check event waitlist for uid
-     * if the doc exists in firebase then user is already on waitlist - button should say Leave
-     * if the doc does not exist then user is not already on waitlist - button should say Join*/
-    public void checkWaitlist(){
-        if (waitListRef == null) return; // just in case onCreate failed
+    private void checkWaitlist() {
+        if (waitListRef == null) return;
 
         waitListRef.addSnapshotListener((snap, e) -> {
             if (e != null) return;
             isOnWaitlist = (snap != null && snap.exists());
-            updateJoinButton();
+
+            // Also check if user is selected
+            checkSelectedStatus();
         });
     }
 
-
-    /** Updates button label depending if user is on waitlist or not */
-    private void updateJoinButton(){
-        joinButton.setText(isOnWaitlist ? "Leave waitlist" : "Join waitlist");
-        joinButton.setEnabled(true);
+    private void checkSelectedStatus() {
+        eventRef.collection("selected")
+                .document(uid)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    isSelected = (snapshot != null && snapshot.exists());
+                    updateJoinButton();
+                });
     }
 
+    private void updateJoinButton() {
+        // Check if registration is open
+        boolean registrationOpen = currentEvent != null && currentEvent.isRegistrationOpen();
+        boolean registrationUpcoming = currentEvent != null && currentEvent.isRegistrationUpcoming();
 
-    /** Puts user on event waitlist
-     * Creates wailist collection which stores uid and joinAt time
-     * Increments currentWaitlistCount in events*/
-    public void joinWaitlist(){
+        if (isSelected) {
+            joinButton.setText("You have been selected");
+            joinButton.setEnabled(false);
+        } else if (isOnWaitlist) {
+            joinButton.setText("Leave waitlist");
+            joinButton.setEnabled(true);
+        } else if (!registrationOpen) {
+            // Registration is not open
+            if (registrationUpcoming) {
+                joinButton.setText("Registration not open yet");
+            } else {
+                joinButton.setText("Registration closed");
+            }
+            joinButton.setEnabled(false);
+        } else {
+            joinButton.setText("Join waitlist");
+            joinButton.setEnabled(true);
+        }
+    }
 
-        joinButton.setEnabled(false); // diable button while adding to avoid double clicks
+    private void joinWaitlist() {
+        joinButton.setEnabled(false);
 
-        // get event data
+        // Check if registration is open
+        if (currentEvent == null || !currentEvent.isRegistrationOpen()) {
+            if (currentEvent != null && currentEvent.isRegistrationUpcoming()) {
+                toast("Registration has not opened yet");
+            } else {
+                toast("Registration period has closed");
+            }
+            joinButton.setEnabled(true);
+            return;
+        }
+
+        // First check if user is already selected
+        eventRef.collection("selected")
+                .document(uid)
+                .get()
+                .addOnSuccessListener(selectedSnap -> {
+                    if (selectedSnap.exists()) {
+                        toast("You have already been selected for this event");
+                        joinButton.setEnabled(true);
+                        return;
+                    }
+
+                    // Check if user is enrolled
+                    eventRef.collection("enrolled")
+                            .document(uid)
+                            .get()
+                            .addOnSuccessListener(enrolledSnap -> {
+                                if (enrolledSnap.exists()) {
+                                    toast("You are already enrolled in this event");
+                                    joinButton.setEnabled(true);
+                                    return;
+                                }
+
+                                // Proceed with joining waitlist
+                                proceedJoinWaitlist();
+                            });
+                });
+    }
+
+    private void proceedJoinWaitlist() {
         eventRef.get().addOnSuccessListener(eventSnap -> {
-            // get current waitlist count, set to 0 if null pointer
             Long currentWaitlistCount = safeLong(eventSnap.getLong("currentWaitlistCount"), 0L);
 
-            // create enrollment document
             java.util.Map<String, Object> data = new java.util.HashMap<>();
             data.put("uid", uid);
             data.put("joinedAt", FieldValue.serverTimestamp());
 
             waitListRef.set(data)
                     .addOnSuccessListener(aVoid -> {
-                        // increment counter
                         eventRef.update("currentWaitlistCount", currentWaitlistCount + 1);
                         toast("You have joined this waitlist");
-                        joinButton.setEnabled(true); // re-enable button
-
+                        joinButton.setEnabled(true);
                     })
-                    .addOnFailureListener(err -> { // catch all for errors
+                    .addOnFailureListener(err -> {
                         toast("Could not join waitlist");
                         joinButton.setEnabled(true);
                     });
 
         }).addOnFailureListener(err -> {
             toast("Could not check waitlist.");
+            joinButton.setEnabled(true);
         });
     }
 
-
-
-    /** Removes user from waitlist if they are on it
-     * Deletes the enrolled document in waitlist collection
-     * Decrements currentWaitlistCount counter */
-    private void leaveWaitlist(){
+    private void leaveWaitlist() {
         joinButton.setEnabled(false);
 
-        // get event data
         eventRef.get().addOnSuccessListener(eventSnap -> {
             Long currentWaitlistCount = safeLong(eventSnap.getLong("currentWaitlistCount"), 0L);
 
-
-            // check if user is on waitlist
             waitListRef.get().addOnSuccessListener(wlSnap -> {
                 if (!wlSnap.exists()) {
                     toast("You're not on the waitlist.");
@@ -274,13 +467,11 @@ public class EventDetailsActivity extends AppCompatActivity {
                     return;
                 }
 
-                // remove the user
-                waitListRef.delete().addOnSuccessListener(aVoid ->{
-                    long newCount = Math.max(0, currentWaitlistCount -1);
+                waitListRef.delete().addOnSuccessListener(aVoid -> {
+                    long newCount = Math.max(0, currentWaitlistCount - 1);
                     eventRef.update("currentWaitlistCount", newCount);
                     toast("Removed from waitlist.");
-                    joinButton.setEnabled(true); // update button
-
+                    joinButton.setEnabled(true);
 
                 }).addOnFailureListener(err -> {
                     toast("Could not leave waitlist.");
@@ -298,15 +489,29 @@ public class EventDetailsActivity extends AppCompatActivity {
         });
     }
 
-    /** Simple long function to protect against null pointers */
-    private long safeLong(Long val, long def){
+    private long safeLong(Long val, long def) {
         return (val == null) ? def : val;
-
     }
 
-
-    /** custom toast function (Im lazy lol) */
     private void toast(String msg) {
-        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh counts when returning from other activities
+        if (isOrganizer) {
+            updateCounts();
+        }
     }
 }
