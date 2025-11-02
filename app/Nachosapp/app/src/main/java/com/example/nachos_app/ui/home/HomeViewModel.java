@@ -81,31 +81,4 @@ public class HomeViewModel extends ViewModel {
                     mLoading.setValue(false);
                 });
     }
-
-    public void searchEvents(String query) {
-        mLoading.setValue(true);
-        mError.setValue(null);
-
-        db.collection("events")
-                .orderBy("eventName").startAt(query).endAt(query + "\uf8ff")
-                .get().addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Event> events = new ArrayList<>();
-                    List<String> eventIds = new ArrayList<>();
-
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Event event = document.toObject(Event.class);
-                        if (event.isRegistrationOpen()) {
-                            events.add(event);
-                            eventIds.add(document.getId());
-                        }
-                    }
-
-                    mEvents.setValue(events);
-                    mEventIds.setValue(eventIds);
-                    mLoading.setValue(false);
-                }).addOnFailureListener(e -> {
-                    mError.setValue("Search failed: " + e.getMessage());
-                    mLoading.setValue(false);
-                });
-    }
 }

@@ -10,6 +10,7 @@ import android.provider.MediaStore;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -39,10 +40,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
     private EditText eventNameEditText;
     private EditText descriptionEditText;
-    private EditText dateTimeEditText;
     private EditText maxParticipantsEditText;
     private TextView registrationStartTextView;
     private TextView registrationEndTextView;
+    private CheckBox enableGeoLocationCheckBox;
     private ImageView bannerPreviewImageView;
     private Button uploadBannerButton;
     private Button createEventButton;
@@ -55,6 +56,9 @@ public class CreateEventActivity extends AppCompatActivity {
     private Uri selectedBannerUri;
     private Date registrationStartDate;
     private Date registrationEndDate;
+    private boolean geoLocationEnabled = false;
+    private Double eventLatitude = null;
+    private Double eventLongitude = null;
 
     private ActivityResultLauncher<Intent> imagePickerLauncher;
 
@@ -91,10 +95,10 @@ public class CreateEventActivity extends AppCompatActivity {
         backButton = findViewById(R.id.backButton);
         eventNameEditText = findViewById(R.id.eventNameEditText);
         descriptionEditText = findViewById(R.id.descriptionEditText);
-        dateTimeEditText = findViewById(R.id.dateTimeEditText);
         maxParticipantsEditText = findViewById(R.id.maxParticipantsEditText);
         registrationStartTextView = findViewById(R.id.registrationStartTextView);
         registrationEndTextView = findViewById(R.id.registrationEndTextView);
+        enableGeoLocationCheckBox = findViewById(R.id.enableGeoLocationCheckBox);
         bannerPreviewImageView = findViewById(R.id.bannerPreviewImageView);
         uploadBannerButton = findViewById(R.id.uploadBannerButton);
         createEventButton = findViewById(R.id.createEventButton);
@@ -105,6 +109,17 @@ public class CreateEventActivity extends AppCompatActivity {
         // Set up date pickers
         registrationStartTextView.setOnClickListener(v -> showDatePicker(true));
         registrationEndTextView.setOnClickListener(v -> showDatePicker(false));
+
+        // GeoLocation checkbox
+        enableGeoLocationCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            geoLocationEnabled = isChecked;
+            if (isChecked) {
+                // TODO: Implement geolocation functionality
+                // For now, just show a toast
+                Toast.makeText(this, "GeoLocation will be implemented", Toast.LENGTH_SHORT).show();
+                // When implemented, you would call: requestUserLocation();
+            }
+        });
 
         // Upload banner
         uploadBannerButton.setOnClickListener(v -> openImagePicker());
@@ -120,15 +135,26 @@ public class CreateEventActivity extends AppCompatActivity {
                     Calendar selectedDate = Calendar.getInstance();
                     selectedDate.set(year, month, dayOfMonth);
 
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                    String dateString = sdf.format(selectedDate.getTime());
-
                     if (isStartDate) {
+                        // Set time to 0:01 (00:01:00)
+                        selectedDate.set(Calendar.HOUR_OF_DAY, 0);
+                        selectedDate.set(Calendar.MINUTE, 1);
+                        selectedDate.set(Calendar.SECOND, 0);
+                        selectedDate.set(Calendar.MILLISECOND, 0);
                         registrationStartDate = selectedDate.getTime();
-                        registrationStartTextView.setText(dateString);
+
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                        registrationStartTextView.setText(sdf.format(registrationStartDate));
                     } else {
+                        // Set time to 23:59 (23:59:59)
+                        selectedDate.set(Calendar.HOUR_OF_DAY, 23);
+                        selectedDate.set(Calendar.MINUTE, 59);
+                        selectedDate.set(Calendar.SECOND, 59);
+                        selectedDate.set(Calendar.MILLISECOND, 999);
                         registrationEndDate = selectedDate.getTime();
-                        registrationEndTextView.setText(dateString);
+
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                        registrationEndTextView.setText(sdf.format(registrationEndDate));
                     }
                 },
                 calendar.get(Calendar.YEAR),
@@ -147,7 +173,6 @@ public class CreateEventActivity extends AppCompatActivity {
     private void validateAndCreateEvent() {
         String eventName = eventNameEditText.getText().toString().trim();
         String description = descriptionEditText.getText().toString().trim();
-        String dateTime = dateTimeEditText.getText().toString().trim();
         String maxParticipantsStr = maxParticipantsEditText.getText().toString().trim();
 
         // Validation
@@ -158,11 +183,6 @@ public class CreateEventActivity extends AppCompatActivity {
 
         if (description.isEmpty()) {
             Toast.makeText(this, "Description is required", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (dateTime.isEmpty()) {
-            Toast.makeText(this, "Date & Time is required", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -200,10 +220,10 @@ public class CreateEventActivity extends AppCompatActivity {
         createEventButton.setText("Creating...");
 
         // Create event
-        createEvent(eventName, description, dateTime, maxParticipants);
+        createEvent(eventName, description, maxParticipants);
     }
 
-    private void createEvent(String eventName, String description, String dateTime, Integer maxParticipants) {
+    private void createEvent(String eventName, String description, Integer maxParticipants) {
         String eventId = db.collection("events").document().getId();
         String organizerId = currentUser.getUid();
 
@@ -215,10 +235,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
                     if (selectedBannerUri != null) {
                         // Process banner as base64
-                        processBanner(eventId, eventName, description, dateTime, maxParticipants, organizerId, organizerName);
+                        processBanner(eventId, eventName, description, maxParticipants, organizerId, organizerName);
                     } else {
                         // Create event without banner
-                        saveEventToFirestore(eventId, eventName, description, dateTime, maxParticipants, organizerId, organizerName, null);
+                        saveEventToFirestore(eventId, eventName, description, maxParticipants, organizerId, organizerName, null);
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -227,7 +247,7 @@ public class CreateEventActivity extends AppCompatActivity {
                 });
     }
 
-    private void processBanner(String eventId, String eventName, String description, String dateTime,
+    private void processBanner(String eventId, String eventName, String description,
                                Integer maxParticipants, String organizerId, String organizerName) {
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedBannerUri);
@@ -251,7 +271,7 @@ public class CreateEventActivity extends AppCompatActivity {
 
             String base64Banner = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
 
-            saveEventToFirestore(eventId, eventName, description, dateTime, maxParticipants,
+            saveEventToFirestore(eventId, eventName, description, maxParticipants,
                     organizerId, organizerName, base64Banner);
         } catch (Exception e) {
             Toast.makeText(this, "Error processing banner", Toast.LENGTH_SHORT).show();
@@ -259,12 +279,15 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
-    private void saveEventToFirestore(String eventId, String eventName, String description, String dateTime,
+    private void saveEventToFirestore(String eventId, String eventName, String description,
                                       Integer maxParticipants, String organizerId, String organizerName, String bannerBase64) {
         // Generate QR code data
         String qrCodeData = "event://" + eventId;
 
-        Event event = new Event(organizerId, organizerName, eventName, description, dateTime,
+        // Generate dateRange string for display
+        String dateRange = generateDateRangeString(registrationStartDate, registrationEndDate);
+
+        Event event = new Event(organizerId, organizerName, eventName, description, dateRange,
                 registrationStartDate, registrationEndDate, maxParticipants, bannerBase64,
                 null, // QR code will be generated next
                 qrCodeData, new Date());
@@ -277,6 +300,33 @@ public class CreateEventActivity extends AppCompatActivity {
                     Toast.makeText(this, "Error creating event", Toast.LENGTH_SHORT).show();
                     resetCreateButton();
                 });
+    }
+
+    private String generateDateRangeString(Date startDate, Date endDate) {
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(startDate);
+
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(endDate);
+
+        SimpleDateFormat monthDay = new SimpleDateFormat("MMM d", Locale.getDefault());
+        SimpleDateFormat dayOnly = new SimpleDateFormat("d", Locale.getDefault());
+
+        // Same day
+        if (startCal.get(Calendar.YEAR) == endCal.get(Calendar.YEAR) &&
+                startCal.get(Calendar.MONTH) == endCal.get(Calendar.MONTH) &&
+                startCal.get(Calendar.DAY_OF_MONTH) == endCal.get(Calendar.DAY_OF_MONTH)) {
+            return monthDay.format(startDate);
+        }
+
+        // Same month
+        if (startCal.get(Calendar.YEAR) == endCal.get(Calendar.YEAR) &&
+                startCal.get(Calendar.MONTH) == endCal.get(Calendar.MONTH)) {
+            return monthDay.format(startDate) + "-" + dayOnly.format(endDate);
+        }
+
+        // Different months
+        return monthDay.format(startDate) + " - " + monthDay.format(endDate);
     }
 
     private void generateAndSaveQRCode(String eventId, String qrCodeData) {
@@ -330,5 +380,9 @@ public class CreateEventActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void requestUserLocation() {
+        // TODO: Implement location request
     }
 }

@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -55,20 +54,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         boolean registrationUpcoming = event.isRegistrationUpcoming();
         DateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
-        holder.itemView.setAlpha(registrationOpen? 1f : 0.4f);
+        // Dim the item if registration is not open
+        holder.itemView.setAlpha(registrationOpen ? 1f : 0.4f);
 
+        // Set spots/status text based on registration period
         if (registrationOpen) {
-            if (event.getMaxParticipants() != null) {
-                int spotsLeft = event.getMaxParticipants() - event.getCurrentWaitlistCount();
-                holder.spotsTextView.setText(spotsLeft + " spots left");
-            } else {
-                holder.spotsTextView.setText("Unlimited spots!");
-            }
+            // Registration is currently open
             String closeDate = dateFormat.format(event.getRegistrationEndDate());
             holder.spotsTextView.setText("Registration closes on " + closeDate);
         } else if (registrationUpcoming) {
+            // Registration hasn't started yet
             String startDate = dateFormat.format(event.getRegistrationStartDate());
             holder.spotsTextView.setText("Registration opens on " + startDate);
+        } else {
+            // Registration is closed
+            holder.spotsTextView.setText("Registration closed");
         }
 
         // Load banner
