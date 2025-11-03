@@ -35,6 +35,7 @@ public class DrawLotteryActivity extends AppCompatActivity {
     private String eventId;
     private int waitlistCount = 0;
     private Integer maxParticipants = null;
+    private NotificationSender notifSender;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +49,7 @@ public class DrawLotteryActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
         eventId = getIntent().getStringExtra("eventId");
+        notifSender = new NotificationSender(eventId, db);
 
         if (eventId == null) {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
@@ -179,6 +181,7 @@ public class DrawLotteryActivity extends AppCompatActivity {
 
                     // Move winners to selected collection
                     moveToSelected(winners);
+                    notifSender.sendSelectionNotifications(winners, waitlistDocs);
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to draw lottery: " + e.getMessage(),
