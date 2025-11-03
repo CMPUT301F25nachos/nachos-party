@@ -1,8 +1,5 @@
 package com.example.nachos_app;
 
-import android.app.Notification;
-import android.util.Log;
-
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
@@ -24,27 +21,13 @@ public class NotificationSender {
     }
 
     /**
-     * Class that contains notification information. Used by NotificationSender to write
-     * notifications to the database
-     */
-    private class Notification {
-        // type can be "waitingList", or "selection"
-        String notificationType;
-        String notificationMessage;
-
-        Notification(String type, String message) {
-            notificationType =  type;
-            notificationMessage = message;
-        }
-    }
-
-    /**
      * Writes win/loss notifications to winners/the rest of the entrants respectively
-     * @param winners List of UIDs of selected winners
+     * @param winners List of documents containing UIDs of selected winners
+     * @param waitlist List of documents containing UIDs of waiting list
      */
     public void sendSelectionNotifications(List<DocumentSnapshot> winners, List<DocumentSnapshot> waitlist) {
         WriteBatch batch = db.batch();
-        ArrayList losers;
+        ArrayList<String> losers;
 
         for (DocumentSnapshot doc : winners) {
             String uid = doc.getString("uid");
@@ -65,19 +48,42 @@ public class NotificationSender {
         }
 
         // Get list of all entrants, subtract winners to get losers
-        //losers = generateLosers(winners, waitlist);
+        losers = generateLosers(winners, waitlist);
 
-        //TODO: send notifs to losers
+        for (String uid : losers) {
+            // Package notification
+            Map<String, Object> loserNotif = new HashMap<>();
+            loserNotif.put("uid", uid);
+            loserNotif.put("eventId", eventId);
+            loserNotif.put("sendTime", new Date());
+            loserNotif.put("type", "lotteryLost");
+            loserNotif.put("message", "You have lost a lottery.");
 
-
-        // Commit batch
+            // Write winning data to db
+            batch.set(db.collection("users")
+                    .document(uid)
+                    .collection("notifications")
+                    .document(), loserNotif);
+        }
         batch.commit();
-
     }
 
     // Get list of all entrants, subtract winners to get losers
-    //private ArrayList<String> generateLosers(List<DocumentSnapshot> winners, List<DocumentSnapshot> waitlist) {}
+    private ArrayList<String> generateLosers(List<DocumentSnapshot> winners, List<DocumentSnapshot> waitlist) {
+        ArrayList<String> listWinners = new ArrayList<>();
+        ArrayList<String> listWaiting = new ArrayList<>();
 
+        for (DocumentSnapshot doc : waitlist) {
+            String uid = doc.getString("uid");
+            listWaiting.add(uid);
+        }
 
+        for (DocumentSnapshot doc : winners) {
+            String uid = doc.getString("uid");
+            listWinners.add(uid);
+        }
 
+        listWaiting.removeAll(listWinners);
+        return listWaiting;
+    }
 }
