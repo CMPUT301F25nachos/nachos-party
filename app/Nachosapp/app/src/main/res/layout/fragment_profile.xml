@@ -16,12 +16,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <ImageView
+            android:id="@+id/profileImageView"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_marginBottom="24dp"
+            android:src="@drawable/ic_profile_avatar" 
+            android:contentDescription="User Profile Image" />
+
         <TextView
             android:id="@+id/nameTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="24sp"
             android:textAlignment="center"
+            android:textStyle="bold"
             tools:text="John Doe" />
 
         <TextView
@@ -39,17 +48,34 @@
             android:layout_marginTop="16dp"
             android:textAlignment="center"
             tools:text="123-456-7890" />
+
+        <TextView
+            android:id="@+id/notificationLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:text="Receive Notifications" />
+
+        <Spinner
+            android:id="@+id/notificationSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/spinner_background"
+            android:padding="8dp"
+            android:entries="@array/notification_options" />
+
     </LinearLayout>
 
     <ImageButton
         android:id="@+id/settingsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="72dp"
-        android:layout_marginEnd="24dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginEnd="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Edit Profile"
-        android:src="@drawable/ic_dashboard_black_24dp"
+        android:src="@drawable/ic_profile_settings"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

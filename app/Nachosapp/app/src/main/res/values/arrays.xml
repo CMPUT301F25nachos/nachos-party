@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="notification_options">
+        <item>yes</item>
+        <item>no</item>
+    </string-array>
+</resources>
