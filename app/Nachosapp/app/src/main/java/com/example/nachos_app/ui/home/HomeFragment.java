@@ -11,16 +11,22 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.activity.result.ActivityResultLauncher;
 
 import com.example.nachos_app.CreateEventActivity;
 import com.example.nachos_app.Event;
 import com.example.nachos_app.EventAdapter;
+import com.example.nachos_app.EventDetailsActivity;
 import com.example.nachos_app.databinding.FragmentHomeBinding;
+
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import java.util.List;
 
 public class HomeFragment extends Fragment {
 
+    private static final String QR_PREFIX = "event://";
     private FragmentHomeBinding binding;
     private EventAdapter eventAdapter;
     private HomeViewModel homeViewModel;
@@ -48,10 +54,7 @@ public class HomeFragment extends Fragment {
             Toast.makeText(getContext(), "Filter coming soon", Toast.LENGTH_SHORT).show();
         });
 
-        binding.scanQrButton.setOnClickListener(v -> {
-            // TODO: Implement QR scanning
-            Toast.makeText(getContext(), "QR Scanner coming soon", Toast.LENGTH_SHORT).show();
-        });
+        binding.scanQrButton.setOnClickListener(v -> launchQrScanner());
 
         // Observe ViewModel
         observeViewModel();
@@ -121,6 +124,41 @@ public class HomeFragment extends Fragment {
                 eventAdapter.setEvents(events, eventIds);
             }
         }
+    }
+
+    private final ActivityResultLauncher<ScanOptions> qrScanLauncher =
+            registerForActivityResult(new ScanContract(), result -> {
+                if (result.getContents() == null) {
+                    Toast.makeText(getContext(), "Scan cancelled", Toast.LENGTH_SHORT).show();
+                } else {
+                    handleScanResult(result.getContents());
+                }
+            });
+
+    private void launchQrScanner() {
+        ScanOptions options = new ScanOptions();
+        options.setPrompt("Scan event QR code");
+        options.setBeepEnabled(false);
+        options.setOrientationLocked(true);
+        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
+        qrScanLauncher.launch(options);
+    }
+
+    private void handleScanResult(String contents) {
+        if (!contents.startsWith(QR_PREFIX)) {
+            Toast.makeText(getContext(), "Invalid QR code", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String eventID = contents.substring(QR_PREFIX.length()).trim();
+        if (eventID.isEmpty()) {
+            Toast.makeText(getContext(), "Malformed event QR", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(getContext(), EventDetailsActivity.class);
+        intent.putExtra("eventId", eventID);
+        startActivity(intent);
     }
 
     @Override
