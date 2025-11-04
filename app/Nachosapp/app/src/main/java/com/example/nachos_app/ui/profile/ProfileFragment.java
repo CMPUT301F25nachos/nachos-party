@@ -5,43 +5,75 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.nachos_app.EditProfileActivity;
+import com.example.nachos_app.R;
 import com.example.nachos_app.databinding.FragmentProfileBinding;
 
 /**
- * This fragment displays the user's profile information, including their name, email, and phone number.
- * It uses a ProfileViewModel to observe and display the user's data from Firestore in real-time. It also
- * provides a settings button that launches the EditProfileActivity, allowing the user to modify their details.
+ * This fragment displays the user's profile information, including their name, email, phone number, and
+ * notification preferences. It uses a ProfileViewModel to observe and display the user's data from
+ * Firestore in real-time and allows the user to update their notification setting.
  */
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
+    private ProfileViewModel profileViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        ProfileViewModel profileViewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        profileViewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
 
         binding = FragmentProfileBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        final TextView nameTextView = binding.nameTextView;
-        profileViewModel.getName().observe(getViewLifecycleOwner(), nameTextView::setText);
+        // Observe user details
+        profileViewModel.getName().observe(getViewLifecycleOwner(), binding.nameTextView::setText);
+        profileViewModel.getEmail().observe(getViewLifecycleOwner(), binding.emailTextView::setText);
+        profileViewModel.getPhone().observe(getViewLifecycleOwner(), binding.phoneTextView::setText);
 
-        final TextView emailTextView = binding.emailTextView;
-        profileViewModel.getEmail().observe(getViewLifecycleOwner(), emailTextView::setText);
-
-        final TextView phoneTextView = binding.phoneTextView;
-        profileViewModel.getPhone().observe(getViewLifecycleOwner(), phoneTextView::setText);
-
-        // Add the click listener to the settings button
+        // Setup Edit Profile button
         binding.settingsButton.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), EditProfileActivity.class);
             startActivity(intent);
+        });
+
+        // Setup Notification Spinner
+        final Spinner notificationSpinner = binding.notificationSpinner;
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(),
+                R.array.notification_options, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        notificationSpinner.setAdapter(adapter);
+
+        // Observe notification preference from ViewModel and update spinner
+        profileViewModel.getNotificationPreference().observe(getViewLifecycleOwner(), preference -> { // Renamed
+            if (preference != null) {
+                int position = adapter.getPosition(preference);
+                notificationSpinner.setSelection(position);
+            }
+        });
+
+        // Listen for user selection and update preference in ViewModel
+        notificationSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedPreference = parent.getItemAtPosition(position).toString();
+                // Prevent initial update on fragment load
+                if (profileViewModel.getNotificationPreference().getValue() != null && 
+                    !profileViewModel.getNotificationPreference().getValue().equals(selectedPreference)) { // Renamed
+                    profileViewModel.updateNotificationPreference(selectedPreference);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
 
         return root;

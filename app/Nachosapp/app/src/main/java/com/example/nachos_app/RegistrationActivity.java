@@ -2,6 +2,7 @@ package com.example.nachos_app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -58,12 +59,41 @@ public class RegistrationActivity extends AppCompatActivity {
             String email = emailEditText.getText().toString().trim();
             String phone = phoneEditText.getText().toString().trim();
 
-            if (name.isEmpty() || email.isEmpty()) {
-                Toast.makeText(RegistrationActivity.this, "Name and email are required", Toast.LENGTH_SHORT).show();
+            // 1. Validate user input
+            if (name.isEmpty()) {
+                nameEditText.setError("Name is required");
+                nameEditText.requestFocus();
                 return;
             }
 
-            // 1. Sign in the user anonymously to get a unique ID for the device
+            if (email.isEmpty()) {
+                emailEditText.setError("Email is required");
+                emailEditText.requestFocus();
+                return;
+            }
+
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                emailEditText.setError("Please enter a valid email");
+                emailEditText.requestFocus();
+                return;
+            }
+
+            // Phone number is optional, but if entered, it must be valid
+            if (!phone.isEmpty()) {
+                if (!Patterns.PHONE.matcher(phone).matches()) {
+                    phoneEditText.setError("Please enter a valid phone number (no letters)");
+                    phoneEditText.requestFocus();
+                    return;
+                }
+                // Also, check for a minimum of 7 digits
+                if (phone.replaceAll("\\D", "").length() < 7) {
+                    phoneEditText.setError("Phone number must have at least 7 digits");
+                    phoneEditText.requestFocus();
+                    return;
+                }
+            }
+
+            // 2. Sign in the user anonymously to get a unique ID for the device
             mAuth.signInAnonymously()
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
@@ -72,11 +102,11 @@ public class RegistrationActivity extends AppCompatActivity {
                                 String userId = user.getUid();
                                 User userObj = new User(name, email, phone, new Date());
 
-                                // 2. Save the user's data to Firestore using the unique user ID
+                                // 3. Save the user's data to Firestore using the unique user ID
                                 db.collection("users").document(userId)
                                         .set(userObj)
                                         .addOnSuccessListener(aVoid -> {
-                                            // 3. On success, navigate to the main activity
+                                            // 4. On success, navigate to the main activity
                                             startActivity(new Intent(this, MainActivity.class));
                                             finish(); // Prevent user from going back to registration
                                         })
