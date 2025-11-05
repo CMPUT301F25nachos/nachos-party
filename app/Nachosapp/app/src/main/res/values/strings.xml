@@ -4,4 +4,13 @@
     <string name="title_dashboard">My Events</string>
     <string name="title_notifications">Notifications</string>
     <string name="title_profile">Profile</string>
+    <string name="admin_pin_fallback">12345</string>
+    <string name="admin_sign_in">Sign in as admin</string>
+    <string name="admin_open_menu">Open Admin Menu</string>
+    <string name="admin_mode_enabled">Admin mode enabled</string>
+    <string name="admin_mode_exited">Exited admin mode</string>
+    <string name="admin_incorrect_pin">Incorrect PIN</string>
+    <string name="admin_title_main_menu">Main Menu</string>
+    <string name="admin_title_all_users">All Profiles</string>
+    <string name="admin_title_all_events">All Events</string>
 </resources>
