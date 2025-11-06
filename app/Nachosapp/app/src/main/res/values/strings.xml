@@ -4,6 +4,9 @@
     <string name="title_dashboard">My Events</string>
     <string name="title_notifications">Notifications</string>
     <string name="title_profile">Profile</string>
+    <string name="delete_button">Delete</string>
+    <string name="accept_button">Accept</string>
+    <string name="queueBtn">View Queue</string>
     <string name="admin_pin_fallback">12345</string>
     <string name="admin_sign_in">Sign in as admin</string>
     <string name="admin_open_menu">Open Admin Menu</string>
