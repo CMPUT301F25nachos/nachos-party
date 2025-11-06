@@ -41,6 +41,13 @@
         <activity android:name=".EntrantListActivity" />
         <activity android:name=".DrawLotteryActivity" />
 
+
+        <activity android:name="com.example.nachos_app.ui.admin.AdminMenuActivity" />
+        <activity android:name="com.example.nachos_app.ui.admin.AdminAllUsersActivity" />
+        <activity android:name="com.example.nachos_app.ui.admin.AdminAllEventsActivity" />
+
+
+
     </application>
 
 </manifest>
