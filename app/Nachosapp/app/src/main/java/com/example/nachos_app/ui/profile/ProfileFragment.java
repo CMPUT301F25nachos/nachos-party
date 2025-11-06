@@ -16,6 +16,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.nachos_app.EditProfileActivity;
 import com.example.nachos_app.R;
 import com.example.nachos_app.databinding.FragmentProfileBinding;
+import com.example.nachos_app.ui.admin.AdminMenuActivity;
+import com.example.nachos_app.ui.admin.AdminPinDialogFragment;
+import com.example.nachos_app.ui.admin.AdminSession;
 
 /**
  * This fragment displays the user's profile information, including their name, email, phone number, and
@@ -73,6 +76,23 @@ public class ProfileFragment extends Fragment {
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
+        // change button text depending on if admin mode is active or not
+        binding.btnAdminSignIn.setText(AdminSession.isAdmin(requireContext())
+                ? getString(R.string.admin_open_menu)
+                : getString(R.string.admin_sign_in));
+        // if already signed in as admin -> start main menu activity
+        binding.btnAdminSignIn.setOnClickListener(view -> {
+            if (AdminSession.isAdmin(requireContext())) {
+                startActivity(new Intent(requireContext(), AdminMenuActivity.class));
+            } else {
+                // if not signed in, ask for pin
+                new AdminPinDialogFragment(() -> {
+                    AdminSession.enable(requireContext());
+                    startActivity(new Intent(requireContext(), AdminMenuActivity.class));
+                }).show(getParentFragmentManager(), "admin_pin");
             }
         });
 

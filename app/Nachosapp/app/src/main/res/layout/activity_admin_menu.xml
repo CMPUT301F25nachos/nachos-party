@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:gravity="top|center_horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/admin_title_main_menu"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:layout_marginTop="8dp" />
+
+    <Space android:layout_width="match_parent" android:layout_height="24dp" />
+
+    <Button
+        android:id="@+id/btn_view_events"
+        android:layout_width="338dp"
+        android:layout_height="56dp"
+        android:background="@android:color/darker_gray"
+        android:text="View Events" />
+
+    <Space android:layout_width="match_parent" android:layout_height="24dp" />
+
+    <Button
+        android:id="@+id/btn_view_profiles"
+        android:layout_width="338dp"
+        android:layout_height="56dp"
+        android:background="@android:color/darker_gray"
+        android:text="View Profiles" />
+
+    <Space android:layout_width="match_parent" android:layout_height="24dp" />
+
+    <Button
+        android:id="@+id/btn_view_images"
+        android:layout_width="338dp"
+        android:layout_height="56dp"
+        android:background="@android:color/darker_gray"
+        android:text="View Images" />
+
+    <Space android:layout_width="match_parent" android:layout_height="24dp" />
+
+    <Button
+        android:id="@+id/btn_view_logs"
+        android:layout_width="338dp"
+        android:layout_height="56dp"
+        android:background="@android:color/darker_gray"
+        android:text="View Logs" />
+
+    <Space android:layout_width="match_parent" android:layout_height="24dp" />
+
+    <!-- Lets user exit admin mode explicitly -->
+    <Button
+        android:id="@+id/btn_exit_admin"
+        android:layout_width="338dp"
+        android:layout_height="48dp"
+        android:text="Exit Admin Mode" />
+</LinearLayout>
