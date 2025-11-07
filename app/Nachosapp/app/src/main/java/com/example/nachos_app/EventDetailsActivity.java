@@ -177,6 +177,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         drawLotteryButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, DrawLotteryActivity.class);
             intent.putExtra("eventId", eventId);
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 

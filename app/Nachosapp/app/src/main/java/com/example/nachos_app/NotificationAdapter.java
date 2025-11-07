@@ -15,10 +15,10 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.DateFormat;
 import java.util.List;
 
 /**
@@ -70,24 +70,29 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     public void onBindViewHolder(@NonNull NotificationViewHolder holder, int position) {
         Notification notification = notificationList.get(position);
         holder.tvMessage.setText(notification.getMessage());
-        holder.tvTime.setText(notification.getSendTime());
+        holder.tvTime.setText(
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                        .format(notification.getSendTime())
+        );
         //remove the notif from firebase
         holder.btnDelete.setOnClickListener(v -> {
-            DatabaseReference notifRef = FirebaseDatabase.getInstance()
-                    .getReference("users")
-                    .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                    .child("notifications")
-                    .child(notification.getUid());
-            notifRef.removeValue().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    Toast.makeText(context, "Notification deleted", Toast.LENGTH_SHORT).show();
-                    notificationList.remove(position);
-                    notifyItemRemoved(position);
-                    notifyItemRangeChanged(position, notificationList.size());
-                } else {
-                    Toast.makeText(context, "Failed to delete notification", Toast.LENGTH_SHORT).show();
-                }
-            });
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+            db.collection("users")
+                    .document(uid)
+                    .collection("notifications")
+                    .document(notification.getId()) // using the Firestore document ID
+                    .delete()
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(context, "Notification deleted", Toast.LENGTH_SHORT).show();
+                        notificationList.remove(position);
+                        notifyItemRemoved(position);
+                        notifyItemRangeChanged(position, notificationList.size());
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(context, "Failed to delete notification", Toast.LENGTH_SHORT).show();
+                    });
         });
         switch (notification.getType()) {
             case "lotteryWon":
@@ -157,9 +162,10 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             super(itemView);
             tvMessage = itemView.findViewById(R.id.tvNotificationMessage);
             tvTime = itemView.findViewById(R.id.tvNotificationTime);
-            tvStatus = itemView.findViewById((R.id.tvNotificationStatus));
+            tvStatus = itemView.findViewById(R.id.tvNotificationStatus);
             btnDelete = itemView.findViewById(R.id.btnDelete);
             btnAccept = itemView.findViewById(R.id.btnAccept);
+            btnViewQueue = itemView.findViewById((R.id.btnViewQueue));
         }
     }
     }
