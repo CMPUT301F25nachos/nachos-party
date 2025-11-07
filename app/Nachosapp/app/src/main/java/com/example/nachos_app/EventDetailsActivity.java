@@ -24,6 +24,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * Main activity for viewing event details. Provides different views based on
+ * user role (organizer vs entrant). Organizers see management controls and
+ * statistics, while entrants see the join/leave waitlist button.
+ */
 public class EventDetailsActivity extends AppCompatActivity {
 
     private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -202,6 +207,10 @@ public class EventDetailsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Shows a dialog displaying the event's QR code.
+     * Uses QRCodeDialogFragment to display the base64 encoded QR image.
+     */
     private void showQRCodeDialog() {
         if (currentEvent == null) {
             Toast.makeText(this, "Event data not loaded", Toast.LENGTH_SHORT).show();
@@ -221,6 +230,11 @@ public class EventDetailsActivity extends AppCompatActivity {
         dialog.show(getSupportFragmentManager(), "QRCodeDialog");
     }
 
+    /**
+     * Fetches event details from Firestore and determines user role.
+     * If user is the organizer, displays organizer view.
+     * Otherwise, displays entrant view with join/leave button.
+     */
     private void fetchEventDetails() {
         eventRef.get()
                 .addOnSuccessListener(snapshot -> {
@@ -278,6 +292,14 @@ public class EventDetailsActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Displays the organizer management view with:
+     * - Event status (open/upcoming/closed)
+     * - Count statistics (waiting, selected, enrolled, cancelled)
+     * - Navigation buttons to view each list
+     * - Draw lottery button
+     * - Send notification button
+     */
     private void showOrganizerView(Event event) {
         // Hide join button for organizers
         joinButton.setVisibility(View.GONE);
@@ -337,6 +359,10 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Displays the entrant view with join/leave waitlist button.
+     * Sets up real-time listener for waitlist status changes.
+     */
     private void showEntrantView() {
         // Hide organizer section
         organizerSection.setVisibility(View.GONE);
@@ -395,6 +421,13 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Updates the join button state and text based on:
+     * - Whether user is on waitlist
+     * - Whether user has been selected
+     * - Whether registration is open
+     * - Registration period status
+     */
     private void updateJoinButton() {
         boolean registrationOpen = currentEvent != null && currentEvent.isRegistrationOpen();
         boolean registrationUpcoming = currentEvent != null && currentEvent.isRegistrationUpcoming();
@@ -511,6 +544,14 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Initiates the process to join the event waitlist.
+     * Validates:
+     * - Registration is currently open
+     * - User is not already selected
+     * - User is not already enrolled
+     * Then proceeds with adding user to waitlist collection.
+     */
     private void joinWaitlist() {
         joinButton.setEnabled(false);
 
@@ -553,6 +594,11 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Adds the user to the waitlist collection.
+     * Increments the currentWaitlistCount in the event document.
+     * Sets joinedAt timestamp using server timestamp.
+     */
     private void proceedJoinWaitlist() {
         eventRef.get().addOnSuccessListener(eventSnap -> {
             Long currentWaitlistCount = safeLong(eventSnap.getLong("currentWaitlistCount"), 0L);
@@ -578,6 +624,10 @@ public class EventDetailsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Removes the user from the waitlist collection.
+     * Decrements the currentWaitlistCount in the event document.
+     */
     private void leaveWaitlist() {
         joinButton.setEnabled(false);
 

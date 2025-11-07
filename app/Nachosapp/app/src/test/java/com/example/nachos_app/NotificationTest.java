@@ -10,6 +10,7 @@ public class NotificationTest {
 
     @Test
     public void testNotificationGettersSetters() {
+        Date now = new Date();
         Notification notif = new Notification();
         Date timestamp = new Date(1730784000000L); // Nov 5, 2024 UTC
 

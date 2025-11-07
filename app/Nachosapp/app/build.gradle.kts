@@ -61,10 +61,11 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.zxing:core:3.5.3")
     implementation("androidx.cardview:cardview:1.0.0")
-    implementation("com.google.zxing:core:3.5.3")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     testImplementation("org.mockito:mockito-core:5.6.0")
     androidTestImplementation("org.mockito:mockito-android:5.5.0")
     androidTestImplementation("androidx.fragment:fragment-testing:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
 
 }

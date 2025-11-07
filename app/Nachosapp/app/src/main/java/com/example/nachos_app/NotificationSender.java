@@ -10,12 +10,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+// US 02.05.01 - As an organizer I want to send a notification to chosen entrants to sign up for events
+
+/**
+ * NotificationSender responsible for sending win and loss notifications after the lottery
+ * is drawn.
+ */
 public class NotificationSender {
 
     private String eventId;
     private String eventName;
     private FirebaseFirestore db;
 
+    /**
+     * Creates a new notification sender to use in sending notifications
+     * @param eventId The ID of the event performing a lottery draw
+     * @param eventName Name of event that corresponds with eventId
+     * @param db The connection to the firebase database
+     */
     NotificationSender(String eventId, String eventName, FirebaseFirestore db) {
         this.db = db;
         this.eventId = eventId;

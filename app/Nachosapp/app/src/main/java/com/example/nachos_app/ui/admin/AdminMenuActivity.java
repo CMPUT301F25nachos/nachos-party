@@ -51,11 +51,7 @@ public class AdminMenuActivity extends AppCompatActivity {
         findViewById(R.id.btn_view_logs).setOnClickListener(v ->
                 Toast.makeText(this, "Logs view coming soon", Toast.LENGTH_SHORT).show());
 
-        // exit admin mode button
-        findViewById(R.id.btn_exit_admin).setOnClickListener(v -> {
-            AdminSession.disable(this);
-            Toast.makeText(this, R.string.admin_mode_exited, Toast.LENGTH_SHORT).show();
-            finish();
-        });
+        // return to previous screen
+        findViewById(R.id.btn_exit_admin).setOnClickListener(v -> finish());
     }
 }

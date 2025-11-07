@@ -17,6 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Activity for displaying lists of entrants in different states.
+ * Can display waitlist, selected, enrolled, or cancelled entrants for an event.
+ */
 public class EntrantListActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
@@ -47,6 +51,10 @@ public class EntrantListActivity extends AppCompatActivity {
         loadEntrants();
     }
 
+    /**
+     * Sets up the action bar with appropriate title based on list type.
+     * Titles: "Waiting List", "Selected Entrants", "Enrolled Entrants", "Cancelled Entrants"
+     */
     private void setupActionBar() {
         String title = getTitle(listType);
         if (getSupportActionBar() != null) {
@@ -77,6 +85,11 @@ public class EntrantListActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
     }
 
+    /**
+     * Loads entrants from the appropriate Firestore subcollection.
+     * Fetches all documents from events/{eventId}/{listType} collection.
+     * Extracts user IDs and relevant metadata (timestamps, status).
+     */
     private void loadEntrants() {
         db.collection("events")
                 .document(eventId)
