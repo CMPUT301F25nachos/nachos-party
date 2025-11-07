@@ -16,20 +16,33 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.nachos_app.EditProfileActivity;
 import com.example.nachos_app.R;
 import com.example.nachos_app.databinding.FragmentProfileBinding;
-import com.example.nachos_app.ui.admin.AdminMenuActivity;
-import com.example.nachos_app.ui.admin.AdminPinDialogFragment;
-import com.example.nachos_app.ui.admin.AdminSession;
 
 /**
- * This fragment displays the user's profile information, including their name, email, phone number, and
- * notification preferences. It uses a ProfileViewModel to observe and display the user's data from
- * Firestore in real-time and allows the user to update their notification setting.
+ * A UI controller that displays the user's profile information. This fragment is responsible for:
+ * <ul>
+ *     <li>Displaying the user's name, email, phone number, and profile image.</li>
+ *     <li>Observing data from {@link ProfileViewModel} to ensure the UI is always up-to-date with the latest
+ *     information from Firestore.</li>
+ *     <li>Handling user interactions, such as launching the {@link EditProfileActivity} when the settings
+ *     button is clicked.</li>
+ *     <li>Managing the notification preference spinner, allowing the user to view and update their choice,
+ *     which is then persisted back to Firestore via the ViewModel.</li>
+ * </ul>
  */
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
     private ProfileViewModel profileViewModel;
 
+    /**
+     * Called to have the fragment instantiate its user interface view. This method sets up the layout,
+     * initializes the {@link ProfileViewModel}, and establishes observers for the live data.
+     *
+     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return Return the View for the fragment's UI.
+     */
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         profileViewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
 
@@ -55,7 +68,7 @@ public class ProfileFragment extends Fragment {
         notificationSpinner.setAdapter(adapter);
 
         // Observe notification preference from ViewModel and update spinner
-        profileViewModel.getNotificationPreference().observe(getViewLifecycleOwner(), preference -> { // Renamed
+        profileViewModel.getNotificationPreference().observe(getViewLifecycleOwner(), preference -> {
             if (preference != null) {
                 int position = adapter.getPosition(preference);
                 notificationSpinner.setSelection(position);
@@ -69,7 +82,7 @@ public class ProfileFragment extends Fragment {
                 String selectedPreference = parent.getItemAtPosition(position).toString();
                 // Prevent initial update on fragment load
                 if (profileViewModel.getNotificationPreference().getValue() != null && 
-                    !profileViewModel.getNotificationPreference().getValue().equals(selectedPreference)) { // Renamed
+                    !profileViewModel.getNotificationPreference().getValue().equals(selectedPreference)) {
                     profileViewModel.updateNotificationPreference(selectedPreference);
                 }
             }
@@ -79,26 +92,13 @@ public class ProfileFragment extends Fragment {
             }
         });
 
-        // change button text depending on if admin mode is active or not
-        binding.btnAdminSignIn.setText(AdminSession.isAdmin(requireContext())
-                ? getString(R.string.admin_open_menu)
-                : getString(R.string.admin_sign_in));
-        // if already signed in as admin -> start main menu activity
-        binding.btnAdminSignIn.setOnClickListener(view -> {
-            if (AdminSession.isAdmin(requireContext())) {
-                startActivity(new Intent(requireContext(), AdminMenuActivity.class));
-            } else {
-                // if not signed in, ask for pin
-                new AdminPinDialogFragment(() -> {
-                    AdminSession.enable(requireContext());
-                    startActivity(new Intent(requireContext(), AdminMenuActivity.class));
-                }).show(getParentFragmentManager(), "admin_pin");
-            }
-        });
-
         return root;
     }
 
+    /**
+     * Called when the view previously created by onCreateView has been detached from the fragment.
+     * This is used to clean up resources associated with the view, in this case, by setting the binding to null.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();
