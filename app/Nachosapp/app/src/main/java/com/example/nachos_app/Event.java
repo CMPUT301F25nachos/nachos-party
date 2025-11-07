@@ -2,6 +2,11 @@ package com.example.nachos_app;
 
 import java.util.Date;
 
+/**
+ * Model class representing an event in the lottery system.
+ * This class stores all event-related information including registration periods,
+ * participant limits, and QR code data.
+ */
 public class Event {
     private String organizerId; // Device ID from Firebase Auth
     private String organizerName;
@@ -11,14 +16,30 @@ public class Event {
     private Date registrationStartDate;
     private Date registrationEndDate;
     private Integer maxParticipants; // null = unlimited
-    private String bannerUrl;
-    private String qrCodeUrl;
+    private String bannerUrl; // Base64 encoded image
+    private String qrCodeUrl; // Base64 encoded QR code image
     private String qrCodeData; // The actual data encoded in QR (event link)
     private Date createdAt;
     private int currentWaitlistCount; // Track how many people joined
 
     public Event() {} // Required for Firestore
 
+    /**
+     * Constructs a new Event with all required fields.
+     *
+     * @param organizerId ID of the user who created the event
+     * @param organizerName name of the organizer
+     * @param eventName name/title of the event
+     * @param description description of the event
+     * @param dateTimeRange date range (e.g., "Dec 10-20")
+     * @param registrationStartDate registration opens
+     * @param registrationEndDate registration closes
+     * @param maxParticipants Maximum waitlist capacity (null for unlimited)
+     * @param bannerUrl Base64 encoded event poster image
+     * @param qrCodeUrl Base64 encoded QR code image
+     * @param qrCodeData The data encoded in the QR code (event:// URL)
+     * @param createdAt Timestamp when the event was created
+     */
     public Event(String organizerId, String organizerName, String eventName,
                  String description, String dateTimeRange, Date registrationStartDate,
                  Date registrationEndDate, Integer maxParticipants, String bannerUrl,
@@ -66,18 +87,27 @@ public class Event {
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
     public void setCurrentWaitlistCount(int currentWaitlistCount) { this.currentWaitlistCount = currentWaitlistCount; }
 
-    // Check if waitlist is full
+    /**
+     * Checks if the waitlist has reached its maximum capacity.
+     * @return true if waitlist is full, false otherwise (or if unlimited)
+     */
     public boolean isWaitlistFull() {
         return maxParticipants != null && currentWaitlistCount >= maxParticipants;
     }
 
-    // Check if registration is open
+    /**
+     * Checks if registration is currently open.
+     * @return true if current time is within registration period
+     */
     public boolean isRegistrationOpen() {
         Date now = new Date();
         return now.after(registrationStartDate) && now.before(registrationEndDate);
     }
 
-    // Check if registration is upcoming
+    /**
+     * Checks if registration has not yet started.
+     * @return true if registration start date is in the future
+     */
     public boolean isRegistrationUpcoming() {
         Date now = new Date();
         return now.before(registrationStartDate);

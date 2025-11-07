@@ -23,6 +23,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Activity that allows event organizers to perform the lottery draw.
+ * Randomly selects a specified number of winners from the waitlist and
+ * moves them to the "selected" collection. Sends notifications to all
+ * entrants about their selection status.
+ */
 public class DrawLotteryActivity extends AppCompatActivity {
 
     private TextView eventNameText;
@@ -124,6 +130,11 @@ public class DrawLotteryActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Performs the lottery draw with the specified number of winners.
+     * Validates that the number is positive and doesn't exceed waitlist size
+     * or max participants limit. Shows confirmation dialog before executing.
+     */
     private void performDraw() {
         String input = numberOfWinnersInput.getText().toString().trim();
 
@@ -166,6 +177,15 @@ public class DrawLotteryActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * Executes the actual lottery draw by:
+     * 1. Fetching all waitlist entries
+     * 2. Randomly shuffling the list
+     * 3. Selecting the specified number of winners
+     * 4. Moving winners to "selected" collection
+     * 5. Sending notifications to all entrants
+     * @param numWinners The number of winners to select
+     */
     private void executeDraw(int numWinners) {
         drawButton.setEnabled(false);
         Toast.makeText(this, "Drawing lottery...", Toast.LENGTH_SHORT).show();
@@ -197,6 +217,12 @@ public class DrawLotteryActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Moves selected winners from waitlist to selected collection.
+     * Uses a batch write.
+     * Updates the waitlist count in the event document.
+     * @param winners List of selected winner documents
+     */
     private void moveToSelected(List<DocumentSnapshot> winners) {
         WriteBatch batch = db.batch();
 
