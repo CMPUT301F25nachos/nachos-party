@@ -4,6 +4,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.widget.ImageView;
 
+/**
+ * Utility class for handling image operations, specifically base64 encoding/decoding.
+ * Provides methods to load base64 encoded images into ImageViews and decode
+ * base64 strings to Bitmaps. Used throughout the app for displaying event banners
+ * and QR codes stored in Firestore.
+ */
 public class ImageUtils {
 
     /**

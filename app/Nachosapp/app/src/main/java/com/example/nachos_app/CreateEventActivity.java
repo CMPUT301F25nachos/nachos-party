@@ -36,6 +36,11 @@ import java.util.Locale;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
 
+/**
+ * Activity responsible for creating new events with all required details.
+ * Allows organizers to set event information, registration periods, participant
+ * limits, upload banners, and automatically generates QR codes.
+ */
 public class CreateEventActivity extends AppCompatActivity {
 
     private EditText eventNameEditText;
@@ -128,6 +133,11 @@ public class CreateEventActivity extends AppCompatActivity {
         createEventButton.setOnClickListener(v -> validateAndCreateEvent());
     }
 
+    /**
+     * Displays a date picker dialog for selecting registration dates.
+     * Sets time to 00:01 for start dates and 23:59 for end dates.
+     * @param isStartDate true for registration start, false for end date
+     */
     private void showDatePicker(boolean isStartDate) {
         Calendar calendar = Calendar.getInstance();
         DatePickerDialog datePickerDialog = new DatePickerDialog(this,
@@ -170,6 +180,14 @@ public class CreateEventActivity extends AppCompatActivity {
         imagePickerLauncher.launch(intent);
     }
 
+    /**
+     * Validates all input fields and initiates event creation process.
+     * Checks for:
+     * - Non-empty event name and description
+     * - Valid registration period dates
+     * - Valid max participants (if specified)
+     * - User authentication
+     */
     private void validateAndCreateEvent() {
         String eventName = eventNameEditText.getText().toString().trim();
         String description = descriptionEditText.getText().toString().trim();
@@ -247,6 +265,17 @@ public class CreateEventActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Processes the selected banner image by resizing and compressing it.
+     * Limits image size to prevent Firestore document size issues (1MB limit).
+     * Max width: 600px, JPEG quality: 70%, Max size: 500KB
+     * @param eventId ID of the event being created
+     * @param eventName name of the event
+     * @param description event description
+     * @param maxParticipants Maximum number of participants (null for unlimited)
+     * @param organizerId organizer's user ID
+     * @param organizerName organizer's name
+     */
     private void processBanner(String eventId, String eventName, String description,
                                Integer maxParticipants, String organizerId, String organizerName) {
         try {
@@ -279,6 +308,17 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Saves the event data to Firestore.
+     * After successful save, initiates QR code generation.
+     * @param eventId ID for the event
+     * @param eventName name of the event
+     * @param description event description
+     * @param maxParticipants Maximum participants allowed (null for unlimited)
+     * @param organizerId organizer's user ID
+     * @param organizerName organizer's name
+     * @param bannerBase64 Base64 encoded banner image (null if no banner)
+     */
     private void saveEventToFirestore(String eventId, String eventName, String description,
                                       Integer maxParticipants, String organizerId, String organizerName, String bannerBase64) {
         // Generate QR code data
@@ -302,6 +342,14 @@ public class CreateEventActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Generates a formatted date range string for display.
+     * Formats dates based on whether they're in the same day/month.
+     * Examples: "Dec 10", "Dec 10-15", "Dec 10 - Jan 5"
+     * @param startDate Registration start date
+     * @param endDate Registration end date
+     * @return Formatted date range string
+     */
     private String generateDateRangeString(Date startDate, Date endDate) {
         Calendar startCal = Calendar.getInstance();
         startCal.setTime(startDate);
@@ -329,6 +377,13 @@ public class CreateEventActivity extends AppCompatActivity {
         return monthDay.format(startDate) + " - " + monthDay.format(endDate);
     }
 
+    /**
+     * Generates a QR code bitmap and saves it as base64 to Firestore.
+     * The QR code encodes the event URL in format: "event://[eventId]"
+     * Uses 512x512 pixel resolution.
+     * @param eventId event ID to update
+     * @param qrCodeData The data to encode in the QR code
+     */
     private void generateAndSaveQRCode(String eventId, String qrCodeData) {
         try {
             // Generate QR code bitmap
@@ -355,6 +410,15 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Generates a QR code bitmap from the given content string.
+     * Uses ZXing library to encode the content into QR_CODE format.
+     * @param content data to encode in the QR code
+     * @param width width of the QR code in pixels
+     * @param height height of the QR code in pixels
+     * @return Bitmap representation of the QR code
+     * @throws WriterException if QR code generation fails
+     */
     private Bitmap generateQRCodeBitmap(String content, int width, int height) throws WriterException {
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
         BitMatrix bitMatrix = qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, width, height);
