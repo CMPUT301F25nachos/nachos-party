@@ -1,8 +1,9 @@
 package com.example.nachos_app;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
-import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -74,42 +74,56 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                         .format(notification.getSendTime())
         );
+
+        holder.btnViewQueue.setOnClickListener(null);
+        holder.btnViewQueue.setVisibility(View.GONE);
+        holder.itemView.setOnClickListener(null);
+        holder.itemView.setClickable(false);
+
         //remove the notif from firebase
         holder.btnDelete.setOnClickListener(v -> {
+            int adapterPosition = holder.getBindingAdapterPosition();
+            if (adapterPosition == RecyclerView.NO_POSITION) {
+                return;
+            }
+
+            Notification item = notificationList.get(adapterPosition);
             FirebaseFirestore db = FirebaseFirestore.getInstance();
             String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
             db.collection("users")
                     .document(uid)
                     .collection("notifications")
-                    .document(notification.getId()) // using the Firestore document ID
+                    .document(item.getId()) // using the Firestore document ID
                     .delete()
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(context, "Notification deleted", Toast.LENGTH_SHORT).show();
-                        notificationList.remove(position);
-                        notifyItemRemoved(position);
-                        notifyItemRangeChanged(position, notificationList.size());
+                        notificationList.remove(adapterPosition);
+                        notifyItemRemoved(adapterPosition);
                     })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(context, "Failed to delete notification", Toast.LENGTH_SHORT).show();
-                    });
+                    .addOnFailureListener(e ->
+                            Toast.makeText(context, "Failed to delete notification", Toast.LENGTH_SHORT).show()
+                    );
         });
         switch (notification.getType()) {
             case "lotteryWon":
                 holder.tvStatus.setText("Invited!");
                 holder.tvStatus.setTextColor(Color.GREEN);
-                holder.btnAccept.setVisibility(View.VISIBLE);
                 holder.btnViewQueue.setVisibility(View.GONE);
-                holder.btnAccept.setOnClickListener(v->{
-                    //backend logic for other user stories
-                    Toast.makeText(context, "Invitation accepted", Toast.LENGTH_SHORT).show();
-                    //toast just a placeholder, can remove
+
+                holder.itemView.setClickable(true);
+                holder.itemView.setOnClickListener(v -> {
+                    int adapterPosition = holder.getBindingAdapterPosition();
+                    if (adapterPosition == RecyclerView.NO_POSITION) {
+                        return;
+                    }
+                    Notification selected = notificationList.get(adapterPosition);
+                    openEventDetails(selected);
                 });
                 break;
             case "waitlisted":
                 holder.tvStatus.setText("Waitlisted");
                 holder.tvStatus.setTextColor(Color.YELLOW);
-                holder.btnAccept.setVisibility(View.GONE);
                 holder.btnViewQueue.setVisibility(View.VISIBLE);
                 holder.btnViewQueue.setOnClickListener(v -> {
                     // TODO: implement queue viewing
@@ -120,7 +134,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             case "lotteryLost":
                 holder.tvStatus.setText("Declined");
                 holder.tvStatus.setTextColor(Color.RED);
-                holder.btnAccept.setVisibility(View.GONE);
                 holder.btnViewQueue.setVisibility(View.GONE);
                 break;
         }
@@ -151,7 +164,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     public static class NotificationViewHolder extends RecyclerView.ViewHolder {
         TextView tvMessage, tvTime, tvStatus;
         ImageButton btnDelete;
-        Button btnAccept;
         Button btnViewQueue;
 
         /**
@@ -164,8 +176,22 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             tvTime = itemView.findViewById(R.id.tvNotificationTime);
             tvStatus = itemView.findViewById(R.id.tvNotificationStatus);
             btnDelete = itemView.findViewById(R.id.btnDelete);
-            btnAccept = itemView.findViewById(R.id.btnAccept);
             btnViewQueue = itemView.findViewById((R.id.btnViewQueue));
         }
     }
+
+    private void openEventDetails(Notification notification) {
+        String eventId = notification.getEventId();
+        if (eventId == null || eventId.isEmpty()) {
+            Toast.makeText(context, "Event unavailable", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(context, EventDetailsActivity.class);
+        intent.putExtra("eventId", eventId);
+        if (!(context instanceof Activity)) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        context.startActivity(intent);
     }
+}

@@ -40,7 +40,7 @@ public class NotificationSender {
             winnerNotif.put("eventId", eventId);
             winnerNotif.put("sendTime", new Date());
             winnerNotif.put("type", "lotteryWon");
-            winnerNotif.put("message", "You have been selected for " + eventName + ". Tap Accept to confirm your spot!");
+            winnerNotif.put("message", "You have been selected for " + eventName + ". Tap to confirm or decline your spot.");
 
             // Write winning data to db
             batch.set(db.collection("users")
