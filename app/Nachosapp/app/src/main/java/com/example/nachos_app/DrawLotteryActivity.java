@@ -33,6 +33,7 @@ public class DrawLotteryActivity extends AppCompatActivity {
 
     private FirebaseFirestore db;
     private String eventId;
+    private String eventName;
     private int waitlistCount = 0;
     private Integer maxParticipants = null;
     private NotificationSender notifSender;
@@ -41,6 +42,7 @@ public class DrawLotteryActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_draw_lottery);
+        eventName = getIntent().getStringExtra("eventName");
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Draw Lottery");
@@ -49,7 +51,6 @@ public class DrawLotteryActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
         eventId = getIntent().getStringExtra("eventId");
-        notifSender = new NotificationSender(eventId, db);
 
         if (eventId == null) {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
@@ -85,11 +86,17 @@ public class DrawLotteryActivity extends AppCompatActivity {
                     Event event = snapshot.toObject(Event.class);
                     if (event == null) return;
 
-                    eventNameText.setText("Event: " + event.getEventName());
+                    eventName = event.getEventName();
+                    eventNameText.setText("Event: " + eventName);
                     maxParticipants = event.getMaxParticipants();
                     maxParticipantsText.setText("Max Participants: " +
                             (maxParticipants != null ? maxParticipants : "Unlimited"));
-
+                    
+                    if (notifSender == null) {
+                        notifSender = new NotificationSender(eventId, eventName, db);
+                    } else {
+                        notifSender.setEventName(eventName);
+                    }
                     loadWaitlistCount();
                 })
                 .addOnFailureListener(e -> {

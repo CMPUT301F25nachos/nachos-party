@@ -13,11 +13,13 @@ import java.util.Map;
 public class NotificationSender {
 
     private String eventId;
+    private String eventName;
     private FirebaseFirestore db;
 
-    NotificationSender(String eventId, FirebaseFirestore db) {
+    NotificationSender(String eventId, String eventName, FirebaseFirestore db) {
         this.db = db;
         this.eventId = eventId;
+        this.eventName = eventName;
     }
 
     /**
@@ -28,7 +30,7 @@ public class NotificationSender {
     public void sendSelectionNotifications(List<DocumentSnapshot> winners, List<DocumentSnapshot> waitlist) {
         WriteBatch batch = db.batch();
         ArrayList<String> losers;
-
+        
         for (DocumentSnapshot doc : winners) {
             String uid = doc.getString("uid");
 
@@ -38,7 +40,7 @@ public class NotificationSender {
             winnerNotif.put("eventId", eventId);
             winnerNotif.put("sendTime", new Date());
             winnerNotif.put("type", "lotteryWon");
-            winnerNotif.put("message", "You have won a lottery!");
+            winnerNotif.put("message", "You have been selected for " + eventName + ". Tap Accept to confirm your spot!");
 
             // Write winning data to db
             batch.set(db.collection("users")
@@ -57,7 +59,7 @@ public class NotificationSender {
             loserNotif.put("eventId", eventId);
             loserNotif.put("sendTime", new Date());
             loserNotif.put("type", "lotteryLost");
-            loserNotif.put("message", "You have lost a lottery.");
+            loserNotif.put("message", "You were not selected for " + eventName + ".");
 
             // Write winning data to db
             batch.set(db.collection("users")
@@ -85,5 +87,9 @@ public class NotificationSender {
 
         listWaiting.removeAll(listWinners);
         return listWaiting;
+    }
+
+    public void setEventName(String eventName) {
+        this.eventName = eventName;
     }
 }

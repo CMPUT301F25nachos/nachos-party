@@ -11,7 +11,6 @@ public class NotificationTest {
         notif.setMessage("Hello");
         notif.setType("lotteryWon");
         notif.setSendTime("Nov 5, 2025");
-
         assertEquals("123", notif.getUid());
         assertEquals("eventA", notif.getEventId());
         assertEquals("Hello", notif.getMessage());

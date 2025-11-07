@@ -26,9 +26,16 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
- * This fragment displays the user's profile information, including their name, email, phone number, and
- * notification preferences. It uses a ProfileViewModel to observe and display the user's data from
- * Firestore in real-time and allows the user to update their notification setting.
+ * A UI controller that displays the user's profile information. This fragment is responsible for:
+ * <ul>
+ *     <li>Displaying the user's name, email, phone number, and profile image.</li>
+ *     <li>Observing data from {@link ProfileViewModel} to ensure the UI is always up-to-date with the latest
+ *     information from Firestore.</li>
+ *     <li>Handling user interactions, such as launching the {@link EditProfileActivity} when the settings
+ *     button is clicked.</li>
+ *     <li>Managing the notification preference spinner, allowing the user to view and update their choice,
+ *     which is then persisted back to Firestore via the ViewModel.</li>
+ * </ul>
  */
 public class ProfileFragment extends Fragment {
 
@@ -41,6 +48,15 @@ public class ProfileFragment extends Fragment {
     @Nullable private String lastQueriedUid = null;
     @Nullable private Boolean lastAllowed = null;
 
+    /**
+     * Called to have the fragment instantiate its user interface view. This method sets up the layout,
+     * initializes the {@link ProfileViewModel}, and establishes observers for the live data.
+     *
+     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return Return the View for the fragment's UI.
+     */
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         profileViewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
 
@@ -68,7 +84,7 @@ public class ProfileFragment extends Fragment {
         notificationSpinner.setAdapter(adapter);
 
         // Observe notification preference from ViewModel and update spinner
-        profileViewModel.getNotificationPreference().observe(getViewLifecycleOwner(), preference -> { // Renamed
+        profileViewModel.getNotificationPreference().observe(getViewLifecycleOwner(), preference -> {
             if (preference != null) {
                 int position = adapter.getPosition(preference);
                 notificationSpinner.setSelection(position);
@@ -82,7 +98,7 @@ public class ProfileFragment extends Fragment {
                 String selectedPreference = parent.getItemAtPosition(position).toString();
                 // Prevent initial update on fragment load
                 if (profileViewModel.getNotificationPreference().getValue() != null && 
-                    !profileViewModel.getNotificationPreference().getValue().equals(selectedPreference)) { // Renamed
+                    !profileViewModel.getNotificationPreference().getValue().equals(selectedPreference)) {
                     profileViewModel.updateNotificationPreference(selectedPreference);
                 }
             }
@@ -100,9 +116,6 @@ public class ProfileFragment extends Fragment {
 
         // Listen for auth changes (will be needed later when we can sign out).
         authListener = fa -> evaluateAdmin(fa.getCurrentUser());
-
-
-
 
         return root;
     }
@@ -122,10 +135,10 @@ public class ProfileFragment extends Fragment {
         evaluateAdmin(auth.getCurrentUser());
     }
 
-
-
-
-
+    /**
+     * Called when the view previously created by onCreateView has been detached from the fragment.
+     * This is used to clean up resources associated with the view, in this case, by setting the binding to null.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

@@ -1,5 +1,6 @@
 package com.example.nachos_app.ui.notifications;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,12 +14,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.nachos_app.Notification;
 import com.example.nachos_app.NotificationAdapter;
-import com.example.nachos_app.NotificationRepository;
 import com.example.nachos_app.databinding.FragmentNotificationsBinding;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,21 +34,14 @@ public class NotificationsFragment extends Fragment {
     private FragmentNotificationsBinding binding;
     private List<Notification> notificationList = new ArrayList<>();
     private NotificationAdapter adapter = new NotificationAdapter(null, notificationList);
-
+    
 
     private FirebaseAuth mAuth;
-    private DatabaseReference userRef;
-
-    // Optional repository injection for testing
-    private NotificationRepository repository;
+    private FirebaseFirestore db;
+    private ListenerRegistration listener;
 
     public NotificationsFragment() {
         // default constructor
-    }
-
-    // Setter for injecting repository (for tests)
-    public void setRepository(NotificationRepository repository) {
-        this.repository = repository;
     }
 
     // Getter for unit tests
@@ -62,15 +57,9 @@ public class NotificationsFragment extends Fragment {
         View root = binding.getRoot();
 
         // Initialize Firebase if repository not injected
-        if (repository == null) {
-            mAuth = FirebaseAuth.getInstance();
-            String currentUserId = mAuth.getCurrentUser().getUid();
-            userRef = FirebaseDatabase.getInstance()
-                    .getReference("users")
-                    .child(currentUserId)
-                    .child("notifications");
-            repository = new NotificationRepository(userRef);
-        }
+
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         // Setup RecyclerView
         RecyclerView recyclerView = binding.recyclerNotifications;
@@ -89,30 +78,40 @@ public class NotificationsFragment extends Fragment {
     /**
      * Fetch notifications from repository
      */
-    public void fetchNotifications() {
-        repository.fetchNotifications(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
-                notificationList.clear();
-                for (com.google.firebase.database.DataSnapshot data : snapshot.getChildren()) {
-                    Notification notif = data.getValue(Notification.class);
-                    if (notif != null) {
-                        notificationList.add(notif);
-                    }
-                }
-                adapter.notifyDataSetChanged();
-            }
+    @SuppressLint("NotifyDataSetChanged")
+    private void fetchNotifications() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(getContext(), "No logged-in user.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-            @Override
-            public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {
-                Toast.makeText(getContext(), "Failed to load notifications.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        listener = db.collection("users")
+                .document(currentUser.getUid())
+                .collection("notifications")
+                .orderBy("sendTime", Query.Direction.DESCENDING)
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null || snapshots == null) {
+                        Toast.makeText(getContext(), "Failed to load notifications.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    notificationList.clear();
+                    for (DocumentSnapshot doc : snapshots) {
+                        Notification notif = doc.toObject(Notification.class);
+                        if (notif != null) {
+                            notif.setId(doc.getId()); // store document ID for deletion
+                            notificationList.add(notif);
+                        }
+                    }
+                    adapter.notifyDataSetChanged();
+                });
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (listener != null) listener.remove(); // stop Firestore listener
         binding = null;
     }
     // For test injection
