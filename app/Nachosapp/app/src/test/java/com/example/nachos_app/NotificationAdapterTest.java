@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
+import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowApplication;
 
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.Date;
 import java.util.List;
 
 @RunWith(RobolectricTestRunner.class)
+@Config(manifest = Config.NONE, sdk = 34)
 public class NotificationAdapterTest {
 
     private Application context;
@@ -34,6 +36,7 @@ public class NotificationAdapterTest {
     @Before
     public void setUp() {
         context = ApplicationProvider.getApplicationContext();
+        context.setTheme(R.style.Theme_Nachosapp);
         recyclerView = new RecyclerView(context);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
     }
