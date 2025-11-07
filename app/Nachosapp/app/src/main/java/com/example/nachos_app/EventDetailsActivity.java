@@ -17,6 +17,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,6 +42,10 @@ public class EventDetailsActivity extends AppCompatActivity {
     private TextView descriptionText;
     private Button joinButton;
     private Button showQRCodeButton;
+    private View selectionActionContainer;
+    private TextView selectionStatusMessage;
+    private Button confirmSelectionButton;
+    private Button declineSelectionButton;
 
     // Organizer views
     private View organizerSection;
@@ -65,6 +71,8 @@ public class EventDetailsActivity extends AppCompatActivity {
     private boolean isOnWaitlist = false;
     private boolean isOrganizer = false;
     private boolean isSelected = false;
+    private String selectionStatus;
+    private ListenerRegistration selectionStatusRegistration;
     private Event currentEvent;
 
     @Override
@@ -117,6 +125,10 @@ public class EventDetailsActivity extends AppCompatActivity {
         descriptionText = findViewById(R.id.eventDescriptionTextView);
         joinButton = findViewById(R.id.joinWaitlistButton);
         showQRCodeButton = findViewById(R.id.showQRCodeButton);
+        selectionActionContainer = findViewById(R.id.selectionActionContainer);
+        selectionStatusMessage = findViewById(R.id.selectionStatusMessage);
+        confirmSelectionButton = findViewById(R.id.confirmSelectionButton);
+        declineSelectionButton = findViewById(R.id.declineSelectionButton);
 
         // Organizer views
         organizerSection = findViewById(R.id.organizerSection);
@@ -139,9 +151,13 @@ public class EventDetailsActivity extends AppCompatActivity {
         organizerSection.setVisibility(View.GONE);
         organizerDivider.setVisibility(View.GONE);
         joinButton.setVisibility(View.GONE);
+        selectionActionContainer.setVisibility(View.GONE);
 
         // Show QR Code button is visible to all users
         showQRCodeButton.setOnClickListener(v -> showQRCodeDialog());
+
+        confirmSelectionButton.setOnClickListener(v -> respondToSelection(true));
+        declineSelectionButton.setOnClickListener(v -> respondToSelection(false));
 
         setupOrganizerButtons();
     }
@@ -247,6 +263,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     } else {
                         showEntrantView();
                         checkWaitlist();
+                        checkSelectedStatus();
                     }
                 })
                 .addOnFailureListener(e ->
@@ -286,6 +303,7 @@ public class EventDetailsActivity extends AppCompatActivity {
     private void showOrganizerView(Event event) {
         // Hide join button for organizers
         joinButton.setVisibility(View.GONE);
+        selectionActionContainer.setVisibility(View.GONE);
 
         // Show divider and organizer section
         organizerDivider.setVisibility(View.VISIBLE);
@@ -351,6 +369,7 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         // Show join button
         joinButton.setVisibility(View.VISIBLE);
+        selectionActionContainer.setVisibility(View.GONE);
 
         joinButton.setOnClickListener(v -> {
             if (isOnWaitlist) {
@@ -373,18 +392,31 @@ public class EventDetailsActivity extends AppCompatActivity {
         waitListRef.addSnapshotListener((snap, e) -> {
             if (e != null) return;
             isOnWaitlist = (snap != null && snap.exists());
-
-            // Also check if user is selected
-            checkSelectedStatus();
+            updateJoinButton();
         });
     }
 
     private void checkSelectedStatus() {
-        eventRef.collection("selected")
+        if (eventRef == null || selectionStatusRegistration != null) {
+            return;
+        }
+
+        selectionStatusRegistration = eventRef.collection("selected")
                 .document(uid)
-                .get()
-                .addOnSuccessListener(snapshot -> {
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        return;
+                    }
+
                     isSelected = (snapshot != null && snapshot.exists());
+                    if (isSelected) {
+                        selectionStatus = snapshot.getString("status");
+                        if (selectionStatus == null || selectionStatus.isEmpty()) {
+                            selectionStatus = "pending";
+                        }
+                    } else {
+                        selectionStatus = null;
+                    }
                     updateJoinButton();
                 });
     }
@@ -397,18 +429,44 @@ public class EventDetailsActivity extends AppCompatActivity {
      * - Registration period status
      */
     private void updateJoinButton() {
-        // Check if registration is open
         boolean registrationOpen = currentEvent != null && currentEvent.isRegistrationOpen();
         boolean registrationUpcoming = currentEvent != null && currentEvent.isRegistrationUpcoming();
 
         if (isSelected) {
-            joinButton.setText("You have been selected");
-            joinButton.setEnabled(false);
-        } else if (isOnWaitlist) {
+            joinButton.setVisibility(View.GONE);
+            selectionActionContainer.setVisibility(View.VISIBLE);
+
+            String status = selectionStatus == null ? "pending" : selectionStatus.toLowerCase(Locale.ROOT);
+            switch (status) {
+                case "accepted":
+                    selectionStatusMessage.setText(getString(R.string.selection_confirmed_message));
+                    confirmSelectionButton.setVisibility(View.GONE);
+                    declineSelectionButton.setVisibility(View.GONE);
+                    break;
+                case "declined":
+                    selectionStatusMessage.setText(getString(R.string.selection_declined_message));
+                    confirmSelectionButton.setVisibility(View.GONE);
+                    declineSelectionButton.setVisibility(View.GONE);
+                    break;
+                default:
+                    selectionStatusMessage.setText(getString(R.string.selection_pending_message));
+                    confirmSelectionButton.setVisibility(View.VISIBLE);
+                    declineSelectionButton.setVisibility(View.VISIBLE);
+                    setSelectionButtonsEnabled(true);
+                    break;
+            }
+            return;
+        }
+
+        selectionActionContainer.setVisibility(View.GONE);
+        confirmSelectionButton.setVisibility(View.VISIBLE);
+        declineSelectionButton.setVisibility(View.VISIBLE);
+        joinButton.setVisibility(View.VISIBLE);
+
+        if (isOnWaitlist) {
             joinButton.setText("Leave waitlist");
             joinButton.setEnabled(true);
         } else if (!registrationOpen) {
-            // Registration is not open
             if (registrationUpcoming) {
                 joinButton.setText("Registration not open yet");
             } else {
@@ -419,6 +477,71 @@ public class EventDetailsActivity extends AppCompatActivity {
             joinButton.setText("Join waitlist");
             joinButton.setEnabled(true);
         }
+    }
+
+    private void setSelectionButtonsEnabled(boolean enabled) {
+        confirmSelectionButton.setEnabled(enabled);
+        declineSelectionButton.setEnabled(enabled);
+    }
+
+    private void respondToSelection(boolean accept) {
+        if (!isSelected) {
+            toast("Invitation unavailable");
+            return;
+        }
+
+        String currentStatus = selectionStatus == null ? "pending" : selectionStatus.toLowerCase(Locale.ROOT);
+        if (!"pending".equals(currentStatus)) {
+            toast("You have already responded to this invitation");
+            return;
+        }
+
+        setSelectionButtonsEnabled(false);
+
+        DocumentReference selectedRef = eventRef.collection("selected").document(uid);
+        selectedRef.get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot == null || !snapshot.exists()) {
+                        toast("Invitation no longer available");
+                        setSelectionButtonsEnabled(true);
+                        return;
+                    }
+
+                    WriteBatch batch = db.batch();
+
+                    java.util.Map<String, Object> selectionUpdates = new java.util.HashMap<>();
+                    selectionUpdates.put("status", accept ? "accepted" : "declined");
+                    selectionUpdates.put("respondedAt", FieldValue.serverTimestamp());
+                    batch.update(selectedRef, selectionUpdates);
+
+                    DocumentReference targetRef = eventRef.collection(accept ? "enrolled" : "cancelled")
+                            .document(uid);
+                    java.util.Map<String, Object> targetData = new java.util.HashMap<>();
+                    targetData.put("uid", uid);
+                    if (accept) {
+                        targetData.put("enrolledAt", FieldValue.serverTimestamp());
+                    } else {
+                        targetData.put("cancelledAt", FieldValue.serverTimestamp());
+                        targetData.put("reason", "declined");
+                    }
+                    batch.set(targetRef, targetData);
+
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> {
+                                toast(accept ? "Spot confirmed!" : "Invitation declined");
+                                selectionStatus = accept ? "accepted" : "declined";
+                                setSelectionButtonsEnabled(true);
+                                updateJoinButton();
+                            })
+                            .addOnFailureListener(e -> {
+                                toast("Failed to update selection: " + e.getMessage());
+                                setSelectionButtonsEnabled(true);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    toast("Failed to update selection: " + e.getMessage());
+                    setSelectionButtonsEnabled(true);
+                });
     }
 
     /**
@@ -555,6 +678,15 @@ public class EventDetailsActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (selectionStatusRegistration != null) {
+            selectionStatusRegistration.remove();
+            selectionStatusRegistration = null;
+        }
     }
 
     @Override

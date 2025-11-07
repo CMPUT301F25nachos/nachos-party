@@ -125,6 +125,56 @@
                 app:cornerRadius="8dp"
                 android:visibility="gone" />
 
+            <LinearLayout
+                android:id="@+id/selectionActionContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/notification_selected_bg"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/selectionStatusMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/selection_pending_message"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/confirmSelectionButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/selection_confirm_button"
+                        android:textColor="@android:color/white"
+                        app:backgroundTint="#2E7D32"
+                        app:cornerRadius="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/declineSelectionButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/selection_decline_button"
+                        android:textColor="@android:color/white"
+                        app:backgroundTint="#C62828"
+                        app:cornerRadius="8dp" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- Divider before Organizer Section -->
             <View
                 android:id="@+id/organizerDivider"

@@ -5,7 +5,6 @@
     <string name="title_notifications">Notifications</string>
     <string name="title_profile">Profile</string>
     <string name="delete_button">Delete</string>
-    <string name="accept_button">Accept</string>
     <string name="queueBtn">View Queue</string>
     <string name="admin_pin_fallback">12345</string>
     <string name="admin_sign_in">Sign in as admin</string>
@@ -16,4 +15,9 @@
     <string name="admin_title_main_menu">Main Menu</string>
     <string name="admin_title_all_users">All Profiles</string>
     <string name="admin_title_all_events">All Events</string>
+    <string name="selection_pending_message">Congratulations! You\'ve been selected in the lottery for this event. Confirm below to secure your spot.</string>
+    <string name="selection_confirm_button">Confirm</string>
+    <string name="selection_decline_button">Decline</string>
+    <string name="selection_confirmed_message">You\'re confirmed for this event.</string>
+    <string name="selection_declined_message">You declined this invitation.</string>
 </resources>
