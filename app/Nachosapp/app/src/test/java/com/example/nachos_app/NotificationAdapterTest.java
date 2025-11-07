@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Date;
 
 public class NotificationAdapterTest {
 
@@ -27,11 +28,12 @@ public class NotificationAdapterTest {
     public void setUp() {
         // Create mock Context
         mockContext = mock(Context.class);
+        Date now = new Date();
 
         // Mock list of notifications
         notifications = new ArrayList<>();
-        notifications.add(new Notification("1", "event1", "You were invited!", "lotteryWon", "Nov 6, 2025"));
-        notifications.add(new Notification("2", "event2","Event starts soon","lotteryLost", "Nov 7, 2025"));
+        notifications.add(new Notification("1", "event1", "You were invited!", "lotteryWon", now));
+        notifications.add(new Notification("2", "event2","Event starts soon","lotteryLost", now));
 
         // Instantiate adapter
         adapter = spy(new NotificationAdapter(mockContext, notifications));
