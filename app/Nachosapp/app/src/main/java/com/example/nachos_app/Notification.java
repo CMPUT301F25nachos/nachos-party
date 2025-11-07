@@ -1,5 +1,7 @@
 package com.example.nachos_app;
 
+import java.util.Date;
+
 /**
  * POJO which Stores the basic information of a notification
  * @author sampickett
@@ -10,7 +12,8 @@ public class Notification {
     private String eventId;
     private String message;
     private String type;
-    private String sendTime;
+    private Date sendTime;
+    private String id;
 
     /**
      * Default constructor of Notification
@@ -26,7 +29,7 @@ public class Notification {
      * @param type Type of Notification (won, waitlisted, lost)
      * @param sendTime Timestamp of notification
      */
-    public Notification(String uid, String eventId, String message, String type, String sendTime) {
+    public Notification(String uid, String eventId, String message, String type, Date sendTime) {
         this.uid = uid;
         this.eventId = eventId;
         this.message = message;
@@ -63,7 +66,7 @@ public class Notification {
     /**
      * @return the timestamp of when the notification was sent
      */
-    public String getSendTime(){
+    public Date getSendTime(){
         return sendTime;
     }
 
@@ -103,8 +106,23 @@ public class Notification {
      * sets the timestamp of when the notification was sent
      * @param sendTime time of when the notification was sent
      */
-    public void setSendTime(String sendTime){
+    public void setSendTime(Date sendTime){
         this.sendTime = sendTime;
+    }
+
+    /**
+     * @return Firestore document ID for this notification
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * Sets the Firestore document ID for this notification
+     * @param id the Firestore document ID
+     */
+    public void setId(String id) {
+        this.id = id;
     }
 }
 
