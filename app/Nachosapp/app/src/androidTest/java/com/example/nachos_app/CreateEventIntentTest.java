@@ -24,7 +24,7 @@ public class CreateEventIntentTest {
             new ActivityScenarioRule<>(CreateEventActivity.class);
 
     /**
-     * US 02.01.01 & US 02.01.04: Test that all required event creation fields are present.
+     * US 02.01.01, US 02.01.04: Test that all required event creation fields are present.
      * Verifies organizers can input event name, description, and set registration period.
      */
     @Test
