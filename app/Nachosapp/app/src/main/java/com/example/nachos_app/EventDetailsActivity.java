@@ -39,6 +39,7 @@ public class EventDetailsActivity extends AppCompatActivity {
     private TextView dateText;
     private TextView spotsText;
     private TextView locationText;
+    private TextView organizerText;
     private TextView registrationPeriodText;
     private TextView descriptionText;
     private Button joinButton;
@@ -123,6 +124,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         dateText = findViewById(R.id.eventDateTextView);
         spotsText = findViewById(R.id.eventSpotsTextView);
         locationText = findViewById(R.id.eventLocationTextView);
+        organizerText = findViewById(R.id.eventOrganizerTextView);
         registrationPeriodText = findViewById(R.id.eventDrawPeriodTextView);
         descriptionText = findViewById(R.id.eventDescriptionTextView);
         joinButton = findViewById(R.id.joinWaitlistButton);
@@ -276,6 +278,14 @@ public class EventDetailsActivity extends AppCompatActivity {
 
     private void populateUI(Event event) {
         titleText.setText(event.getEventName());
+
+        String organizerName = event.getOrganizerName();
+        if (organizerName != null && !organizerName.trim().isEmpty()) {
+            organizerText.setText("Organizer: " + organizerName);
+        } else {
+            organizerText.setText("Organizer: Unknown");
+        }
+
         descriptionText.setText(event.getDescription());
 
         String dateRange = event.getDateTimeRange();
