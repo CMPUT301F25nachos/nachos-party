@@ -13,6 +13,11 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ViewModel for the Dashboard Fragment.
+ * Manages loading and filtering of events relevant to the current user.
+ * Filters events based on user participation status (organizer, waitlist, selected, enrolled, cancelled).
+ */
 public class DashboardViewModel extends ViewModel {
 
     private final MutableLiveData<List<Event>> mEvents;
@@ -45,6 +50,11 @@ public class DashboardViewModel extends ViewModel {
         return mError;
     }
 
+    /**
+     * Loads all events and filters them to show only those relevant to the current user.
+     * Retrieves all events from Firestore, then checks user's participation status.
+     * @param currentUserId The ID of the currently logged-in user
+     */
     public void loadMyEvents(String currentUserId) {
         if (currentUserId == null) {
             mError.setValue("User not authenticated");
@@ -72,6 +82,13 @@ public class DashboardViewModel extends ViewModel {
                 });
     }
 
+    /**
+     * Filters events to include only those where the user is involved.
+     * Checks if user is organizer or participant in any capacity.
+     * @param allEventIds List of all event IDs from Firestore
+     * @param allEvents List of all event objects
+     * @param currentUserId The current user's ID
+     */
     private void filterUserEvents(List<String> allEventIds, List<Event> allEvents, String currentUserId) {
         final List<Event> userEvents = new ArrayList<>();
         final List<String> userEventIds = new ArrayList<>();
@@ -115,6 +132,15 @@ public class DashboardViewModel extends ViewModel {
         }
     }
 
+    /**
+     * Checks if the user is a participant in an event.
+     * Sequentially checks waitlist, selected, enrolled, and cancelled collections.
+     * @param eventId The event ID to check
+     * @param event The event object
+     * @param userEvents List to add event to if user is participant
+     * @param userEventIds List to add event ID to if user is participant
+     * @param onComplete Callback to run when check is complete
+     */
     private void checkIfUserIsParticipant(String eventId, Event event,
                                           List<Event> userEvents,
                                           List<String> userEventIds,

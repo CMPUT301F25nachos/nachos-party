@@ -25,6 +25,16 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment displaying the user's personalized dashboard of events.
+ * Shows events where the user is either:
+ * - The organizer
+ * - On the waitlist
+ * - Selected for participation
+ * - Enrolled
+ * - Cancelled
+ * Provides filtering capabilities and navigation to event details.
+ */
 public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
@@ -58,6 +68,10 @@ public class DashboardFragment extends Fragment {
         return root;
     }
 
+    /**
+     * Observes LiveData from the ViewModel to update UI.
+     * Watches for loading state, events list, event IDs, and errors.
+     */
     private void observeViewModel() {
         // Observe loading state
         dashboardViewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
@@ -80,6 +94,10 @@ public class DashboardFragment extends Fragment {
         });
     }
 
+    /**
+     * Updates the events list in the adapter when both events and IDs are available.
+     * Ensures data consistency by checking that list sizes match.
+     */
     private void updateEventsList() {
         if (binding == null) return;
 
@@ -91,17 +109,29 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    /**
+     * Initializes view references from the binding.
+     * @param root The root view of the fragment
+     */
     private void initViews(View root) {
         recyclerView = binding.myEventsRecyclerView;
         filterButton = binding.filterButton;
     }
 
+    /**
+     * Sets up the RecyclerView with adapter and layout manager.
+     * Uses LinearLayoutManager for vertical scrolling list.
+     */
     private void setupRecyclerView() {
         eventAdapter = new EventAdapter(requireContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(eventAdapter);
     }
 
+    /**
+     * Sets up the filter button click listener.
+     * Currently shows a placeholder toast message.
+     */
     private void setupFilterButton() {
         filterButton.setOnClickListener(v -> {
             // TODO: Implement filter functionality
