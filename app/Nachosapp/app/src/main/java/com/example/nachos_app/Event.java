@@ -16,6 +16,7 @@ public class Event {
     private Date registrationStartDate;
     private Date registrationEndDate;
     private Integer maxParticipants; // null = unlimited
+    private String eventLocation; // optional
     private String bannerUrl; // Base64 encoded image
     private String qrCodeUrl; // Base64 encoded QR code image
     private String qrCodeData; // The actual data encoded in QR (event link)
@@ -39,11 +40,12 @@ public class Event {
      * @param qrCodeUrl Base64 encoded QR code image
      * @param qrCodeData The data encoded in the QR code (event:// URL)
      * @param createdAt Timestamp when the event was created
+     * @param eventLocation optional event's location
      */
     public Event(String organizerId, String organizerName, String eventName,
                  String description, String dateTimeRange, Date registrationStartDate,
                  Date registrationEndDate, Integer maxParticipants, String bannerUrl,
-                 String qrCodeUrl, String qrCodeData, Date createdAt) {
+                 String qrCodeUrl, String qrCodeData, Date createdAt, String eventLocation) {
         this.organizerId = organizerId;
         this.organizerName = organizerName;
         this.eventName = eventName;
@@ -57,6 +59,7 @@ public class Event {
         this.qrCodeData = qrCodeData;
         this.createdAt = createdAt;
         this.currentWaitlistCount = 0;
+        this.eventLocation = eventLocation;
     }
 
     public String getOrganizerId() { return organizerId; }
@@ -72,6 +75,7 @@ public class Event {
     public String getQrCodeData() { return qrCodeData; }
     public Date getCreatedAt() { return createdAt; }
     public int getCurrentWaitlistCount() { return currentWaitlistCount; }
+    public String getEventLocation() { return eventLocation; }
 
     public void setOrganizerId(String organizerId) { this.organizerId = organizerId; }
     public void setOrganizerName(String organizerName) { this.organizerName = organizerName; }
@@ -86,6 +90,7 @@ public class Event {
     public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
     public void setCurrentWaitlistCount(int currentWaitlistCount) { this.currentWaitlistCount = currentWaitlistCount; }
+    public void setEventLocation(String eventLocation) { this.eventLocation = eventLocation; }
 
     /**
      * Checks if the waitlist has reached its maximum capacity.

@@ -17,6 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * RecyclerView adapter for displaying event items in a list.
+ * Shows event details including name, date range, banner image, and registration status.
+ * Handles click events to navigate to event details.
+ */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
     private Context context;
@@ -29,6 +34,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         this.eventIdList = new ArrayList<>();
     }
 
+    /**
+     * Updates the adapter with new event data.
+     * @param events List of Event objects to display
+     * @param eventIds Corresponding list of event IDs
+     */
     public void setEvents(List<Event> events, List<String> eventIds) {
         this.eventList = events;
         this.eventIdList = eventIds;
@@ -42,6 +52,13 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         return new EventViewHolder(view);
     }
 
+    /**
+     * Binds event data to the ViewHolder.
+     * Sets event name, date range, registration status, and banner image.
+     * Dims items with closed or upcoming registration.
+     * @param holder The ViewHolder to bind data to
+     * @param position Position in the data list
+     */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
         Event event = eventList.get(position);

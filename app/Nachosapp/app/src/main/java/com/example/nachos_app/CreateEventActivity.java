@@ -46,6 +46,7 @@ public class CreateEventActivity extends AppCompatActivity {
     private EditText eventNameEditText;
     private EditText descriptionEditText;
     private EditText maxParticipantsEditText;
+    private EditText eventLocationEditText;
     private TextView registrationStartTextView;
     private TextView registrationEndTextView;
     private CheckBox enableGeoLocationCheckBox;
@@ -101,6 +102,7 @@ public class CreateEventActivity extends AppCompatActivity {
         eventNameEditText = findViewById(R.id.eventNameEditText);
         descriptionEditText = findViewById(R.id.descriptionEditText);
         maxParticipantsEditText = findViewById(R.id.maxParticipantsEditText);
+        eventLocationEditText = findViewById(R.id.eventLocationEditText);
         registrationStartTextView = findViewById(R.id.registrationStartTextView);
         registrationEndTextView = findViewById(R.id.registrationEndTextView);
         enableGeoLocationCheckBox = findViewById(R.id.enableGeoLocationCheckBox);
@@ -192,6 +194,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String eventName = eventNameEditText.getText().toString().trim();
         String description = descriptionEditText.getText().toString().trim();
         String maxParticipantsStr = maxParticipantsEditText.getText().toString().trim();
+        String eventLocation = eventLocationEditText.getText().toString().trim();
 
         // Validation
         if (eventName.isEmpty()) {
@@ -238,10 +241,10 @@ public class CreateEventActivity extends AppCompatActivity {
         createEventButton.setText("Creating...");
 
         // Create event
-        createEvent(eventName, description, maxParticipants);
+        createEvent(eventName, description, maxParticipants, eventLocation);
     }
 
-    private void createEvent(String eventName, String description, Integer maxParticipants) {
+    private void createEvent(String eventName, String description, Integer maxParticipants, String eventLocation) {
         String eventId = db.collection("events").document().getId();
         String organizerId = currentUser.getUid();
 
@@ -253,10 +256,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
                     if (selectedBannerUri != null) {
                         // Process banner as base64
-                        processBanner(eventId, eventName, description, maxParticipants, organizerId, organizerName);
+                        processBanner(eventId, eventName, description, maxParticipants, organizerId, organizerName, eventLocation);
                     } else {
                         // Create event without banner
-                        saveEventToFirestore(eventId, eventName, description, maxParticipants, organizerId, organizerName, null);
+                        saveEventToFirestore(eventId, eventName, description, maxParticipants, organizerId, organizerName, null, eventLocation);
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -275,9 +278,10 @@ public class CreateEventActivity extends AppCompatActivity {
      * @param maxParticipants Maximum number of participants (null for unlimited)
      * @param organizerId organizer's user ID
      * @param organizerName organizer's name
+     * @param eventLocation optional event's location
      */
-    private void processBanner(String eventId, String eventName, String description,
-                               Integer maxParticipants, String organizerId, String organizerName) {
+    private void processBanner(String eventId, String eventName, String description, Integer maxParticipants,
+                               String organizerId, String organizerName, String eventLocation) {
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedBannerUri);
 
@@ -288,11 +292,11 @@ public class CreateEventActivity extends AppCompatActivity {
 
             // Convert to base64
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos); // Lower quality = smaller size
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
             byte[] data = baos.toByteArray();
 
             // Check size (Firestore has 1MB limit per document)
-            if (data.length > 500000) { // 500KB safety margin
+            if (data.length > 500000) {
                 Toast.makeText(this, "Image too large, please select a smaller image", Toast.LENGTH_LONG).show();
                 resetCreateButton();
                 return;
@@ -301,7 +305,7 @@ public class CreateEventActivity extends AppCompatActivity {
             String base64Banner = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
 
             saveEventToFirestore(eventId, eventName, description, maxParticipants,
-                    organizerId, organizerName, base64Banner);
+                    organizerId, organizerName, base64Banner, eventLocation);
         } catch (Exception e) {
             Toast.makeText(this, "Error processing banner", Toast.LENGTH_SHORT).show();
             resetCreateButton();
@@ -318,9 +322,11 @@ public class CreateEventActivity extends AppCompatActivity {
      * @param organizerId organizer's user ID
      * @param organizerName organizer's name
      * @param bannerBase64 Base64 encoded banner image (null if no banner)
+     * @param eventLocation optional event's location
      */
     private void saveEventToFirestore(String eventId, String eventName, String description,
-                                      Integer maxParticipants, String organizerId, String organizerName, String bannerBase64) {
+                                      Integer maxParticipants, String organizerId,
+                                      String organizerName, String bannerBase64, String eventLocation) {
         // Generate QR code data
         String qrCodeData = "event://" + eventId;
 
@@ -330,7 +336,7 @@ public class CreateEventActivity extends AppCompatActivity {
         Event event = new Event(organizerId, organizerName, eventName, description, dateRange,
                 registrationStartDate, registrationEndDate, maxParticipants, bannerBase64,
                 null, // QR code will be generated next
-                qrCodeData, new Date());
+                qrCodeData, new Date(), eventLocation);
 
         db.collection("events").document(eventId)
                 .set(event).addOnSuccessListener(aVoid -> {

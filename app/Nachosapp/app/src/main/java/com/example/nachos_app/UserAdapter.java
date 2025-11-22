@@ -17,6 +17,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * RecyclerView adapter for displaying user/entrant lists.
+ * Supports different display modes: waitlist, selected, enrolled, cancelled, profile.
+ * Shows user ID, relevant timestamp, and status information based on mode.
+ */
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
     private Context context;
@@ -33,6 +38,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         this.dateFormat = new SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault());
     }
 
+    /**
+     * Updates the adapter with new user data.
+     * @param ids List of user IDs
+     * @param dataList List of user data maps containing timestamps and status
+     */
     public void setUsers(List<String> ids, List<Map<String, Object>> dataList) {
         this.userIds = ids;
         this.userDataList = dataList;
@@ -46,6 +56,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return new UserViewHolder(view);
     }
 
+    /**
+     * Binds user data to the ViewHolder.
+     * Displays user ID (truncated), timestamp based on display mode, and status if applicable.
+     * @param holder The ViewHolder to bind data to
+     * @param position Position in the data list
+     */
     @Override
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         String uid = userIds.get(position);
@@ -77,6 +93,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         }
     }
 
+    /**
+     * Determines which timestamp field to use based on display mode.
+     * @return The field name for the timestamp (e.g., "joinedAt", "selectedAt")
+     */
     private String getTimestampLabel() {
         switch (displayMode) {
             case "waitlist":
@@ -92,6 +112,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         }
     }
 
+    /**
+     * Formats the detail text with appropriate label based on display mode.
+     * @param date The formatted date string
+     * @return Formatted detail text (e.g., "Joined: Dec 25, 2024")
+     */
     private String getDetailText(String date) {
         switch (displayMode) {
             case "waitlist":
@@ -107,6 +132,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         }
     }
 
+    /**
+     * Capitalizes the first letter of a string.
+     * @param str The string to capitalize
+     * @return String with first letter capitalized
+     */
     private String capitalizeFirst(String str) {
         if (str == null || str.isEmpty()) return str;
         return str.substring(0, 1).toUpperCase() + str.substring(1);

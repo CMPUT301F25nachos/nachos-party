@@ -41,7 +41,7 @@ public class EventTest {
         event = new Event("organizer123", "Test Organizer",
                 "Test Event", "Test Description", "Dec 10-20",
                 pastDate, futureDate, 10, null, null,
-                "event://test123", currentDate);
+                "event://test123", currentDate, "");
     }
 
     @Test

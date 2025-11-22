@@ -25,6 +25,16 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment displaying the user's personalized dashboard of events.
+ * Shows events where the user is either:
+ * - The organizer
+ * - On the waitlist
+ * - Selected for participation
+ * - Enrolled
+ * - Cancelled
+ * Provides filtering capabilities and navigation to event details.
+ */
 public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
@@ -32,8 +42,6 @@ public class DashboardFragment extends Fragment {
     private RecyclerView recyclerView;
     private EventAdapter eventAdapter;
     private Button filterButton;
-
-    private FirebaseFirestore db;
     private String currentUserId;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -42,8 +50,6 @@ public class DashboardFragment extends Fragment {
 
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
-        db = FirebaseFirestore.getInstance();
 
         // Get current user
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -54,147 +60,83 @@ public class DashboardFragment extends Fragment {
         initViews(root);
         setupRecyclerView();
         setupFilterButton();
-        loadMyEvents();
+        observeViewModel();
+
+        // Load events through ViewModel
+        dashboardViewModel.loadMyEvents(currentUserId);
 
         return root;
     }
 
+    /**
+     * Observes LiveData from the ViewModel to update UI.
+     * Watches for loading state, events list, event IDs, and errors.
+     */
+    private void observeViewModel() {
+        // Observe loading state
+        dashboardViewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
+            if (binding == null) return;
+        });
+
+        // Observe events
+        dashboardViewModel.getEvents().observe(getViewLifecycleOwner(), events -> {
+            updateEventsList();
+        });
+
+        dashboardViewModel.getEventIds().observe(getViewLifecycleOwner(), eventIds -> {
+            updateEventsList();
+        });
+
+        // Observe errors
+        dashboardViewModel.getError().observe(getViewLifecycleOwner(), error -> {
+            if (binding == null || error == null) return;
+            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    /**
+     * Updates the events list in the adapter when both events and IDs are available.
+     * Ensures data consistency by checking that list sizes match.
+     */
+    private void updateEventsList() {
+        if (binding == null) return;
+
+        List<Event> events = dashboardViewModel.getEvents().getValue();
+        List<String> eventIds = dashboardViewModel.getEventIds().getValue();
+
+        if (events != null && eventIds != null && events.size() == eventIds.size()) {
+            eventAdapter.setEvents(events, eventIds);
+        }
+    }
+
+    /**
+     * Initializes view references from the binding.
+     * @param root The root view of the fragment
+     */
     private void initViews(View root) {
         recyclerView = binding.myEventsRecyclerView;
         filterButton = binding.filterButton;
     }
 
+    /**
+     * Sets up the RecyclerView with adapter and layout manager.
+     * Uses LinearLayoutManager for vertical scrolling list.
+     */
     private void setupRecyclerView() {
         eventAdapter = new EventAdapter(requireContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(eventAdapter);
     }
 
+    /**
+     * Sets up the filter button click listener.
+     * Currently shows a placeholder toast message.
+     */
     private void setupFilterButton() {
         filterButton.setOnClickListener(v -> {
             // TODO: Implement filter functionality
             Toast.makeText(requireContext(), "Filter coming soon", Toast.LENGTH_SHORT).show();
         });
-    }
-
-    private void loadMyEvents() {
-        if (currentUserId == null) {
-            return;
-        }
-
-        db.collection("events")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<String> allEventIds = new ArrayList<>();
-                    List<Event> allEvents = new ArrayList<>();
-
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        allEventIds.add(doc.getId());
-                        allEvents.add(doc.toObject(Event.class));
-                    }
-
-                    filterUserEvents(allEventIds, allEvents);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(),
-                            "Failed to load events: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    private void filterUserEvents(List<String> allEventIds, List<Event> allEvents) {
-        final List<Event> userEvents = new ArrayList<>();
-        final List<String> userEventIds = new ArrayList<>();
-        final int totalEvents = allEventIds.size();
-        final int[] processedCount = {0};
-
-        if (totalEvents == 0) {
-            eventAdapter.setEvents(userEvents, userEventIds);
-            return;
-        }
-
-        for (int i = 0; i < allEventIds.size(); i++) {
-            final String eventId = allEventIds.get(i);
-            final Event event = allEvents.get(i);
-
-            // Check if user is organizer
-            if (event.getOrganizerId().equals(currentUserId)) {
-                userEvents.add(event);
-                userEventIds.add(eventId);
-
-                processedCount[0]++;
-                if (processedCount[0] == totalEvents) {
-                    eventAdapter.setEvents(userEvents, userEventIds);
-                }
-                continue;
-            }
-
-            // Check if user is participant (in any subcollection)
-            checkIfUserIsParticipant(eventId, event, userEvents, userEventIds, () -> {
-                processedCount[0]++;
-                if (processedCount[0] == totalEvents) {
-                    eventAdapter.setEvents(userEvents, userEventIds);
-                }
-            });
-        }
-    }
-
-    private void checkIfUserIsParticipant(String eventId, Event event,
-                                          List<Event> userEvents,
-                                          List<String> userEventIds,
-                                          Runnable onComplete) {
-        DocumentReference eventRef = db.collection("events").document(eventId);
-
-        // Check waitlist first (most common case)
-        eventRef.collection("waitlist").document(currentUserId)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot.exists()) {
-                        userEvents.add(event);
-                        userEventIds.add(eventId);
-                        onComplete.run();
-                        return;
-                    }
-
-                    // Not in waitlist, check selected
-                    eventRef.collection("selected").document(currentUserId)
-                            .get()
-                            .addOnSuccessListener(selectedSnapshot -> {
-                                if (selectedSnapshot.exists()) {
-                                    userEvents.add(event);
-                                    userEventIds.add(eventId);
-                                    onComplete.run();
-                                    return;
-                                }
-
-                                // Not in selected, check enrolled
-                                eventRef.collection("enrolled").document(currentUserId)
-                                        .get()
-                                        .addOnSuccessListener(enrolledSnapshot -> {
-                                            if (enrolledSnapshot.exists()) {
-                                                userEvents.add(event);
-                                                userEventIds.add(eventId);
-                                                onComplete.run();
-                                                return;
-                                            }
-
-                                            // Not in enrolled, check cancelled
-                                            eventRef.collection("cancelled").document(currentUserId)
-                                                    .get()
-                                                    .addOnSuccessListener(cancelledSnapshot -> {
-                                                        if (cancelledSnapshot.exists()) {
-                                                            userEvents.add(event);
-                                                            userEventIds.add(eventId);
-                                                        }
-                                                        onComplete.run();
-                                                    })
-                                                    .addOnFailureListener(e -> onComplete.run());
-                                        })
-                                        .addOnFailureListener(e -> onComplete.run());
-                            })
-                            .addOnFailureListener(e -> onComplete.run());
-                })
-                .addOnFailureListener(e -> onComplete.run());
     }
 
     @Override

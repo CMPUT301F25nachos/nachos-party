@@ -14,6 +14,11 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import android.widget.Button;
 
+/**
+ * Dialog fragment for displaying an event's QR code.
+ * Shows the event name and QR code image in a full-screen dialog.
+ * Users can close the dialog with a close button.
+ */
 public class QRCodeDialogFragment extends DialogFragment {
 
     private static final String ARG_EVENT_NAME = "event_name";
@@ -22,6 +27,12 @@ public class QRCodeDialogFragment extends DialogFragment {
     private String eventName;
     private String qrCodeBase64;
 
+    /**
+     * Creates a new instance of QRCodeDialogFragment with event data.
+     * @param eventName The name of the event
+     * @param qrCodeBase64 Base64 encoded QR code image
+     * @return New QRCodeDialogFragment instance
+     */
     public static QRCodeDialogFragment newInstance(String eventName, String qrCodeBase64) {
         QRCodeDialogFragment fragment = new QRCodeDialogFragment();
         Bundle args = new Bundle();
