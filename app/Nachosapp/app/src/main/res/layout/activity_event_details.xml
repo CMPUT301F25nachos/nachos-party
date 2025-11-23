@@ -74,7 +74,6 @@
                     android:id="@+id/eventOrganizerTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
                     android:text="Organizer: John Doe"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
@@ -84,6 +83,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Date and Time: Sep 5-20"
+                    android:layout_marginTop="8dp"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
 
