@@ -21,14 +21,13 @@
             android:background="#E0E0E0"
             android:contentDescription="Event banner"/>
 
-        <!-- Event Information Container -->
+        <!-- Event Info -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Event Name -->
             <TextView
                 android:id="@+id/eventNameTextView"
                 android:layout_width="wrap_content"
@@ -38,7 +37,6 @@
                 android:textSize="18sp"
                 android:textStyle="bold"/>
 
-            <!-- Organizer Name -->
             <TextView
                 android:id="@+id/eventOrganizerTextView"
                 android:layout_width="wrap_content"
@@ -48,7 +46,6 @@
                 android:textSize="13sp"
                 android:layout_marginTop="4dp"/>
 
-            <!-- Event Date (when the event occurs) -->
             <TextView
                 android:id="@+id/eventDateTextView"
                 android:layout_width="wrap_content"
@@ -58,7 +55,6 @@
                 android:textSize="13sp"
                 android:layout_marginTop="4dp"/>
 
-            <!-- Remaining Spots -->
             <TextView
                 android:id="@+id/eventSpotsTextView"
                 android:layout_width="wrap_content"
@@ -69,7 +65,6 @@
                 android:textStyle="bold"
                 android:layout_marginTop="4dp"/>
 
-            <!-- Registration Close Date -->
             <TextView
                 android:id="@+id/eventRegistrationTextView"
                 android:layout_width="wrap_content"

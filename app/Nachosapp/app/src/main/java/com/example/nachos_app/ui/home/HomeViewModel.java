@@ -76,7 +76,6 @@ public class HomeViewModel extends ViewModel {
                             openEvents.add(event);
                             openIds.add(document.getId());
                         } else if (event.isRegistrationUpcoming()) {
-                            // Show upcoming events (registration hasn't started yet)
                             upcomingEvents.add(event);
                             upcomingIds.add(document.getId());
                         }

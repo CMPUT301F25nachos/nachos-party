@@ -40,8 +40,7 @@ public class EventTest {
         // Create test event
         event = new Event("organizer123", "Test Organizer",
                 "Test Event", "Test Description", "Dec 10-20",
-                pastDate, futureDate, null, // eventDate is null (optional)
-                10, null, null,
+                pastDate, futureDate, null, 10, null, null,
                 "event://test123", currentDate, "");
     }
 

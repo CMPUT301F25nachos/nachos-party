@@ -285,13 +285,12 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         descriptionText.setText(event.getDescription());
 
-        // Display event date if available, otherwise show registration date range
+        // Display event date if available, otherwise show "TBA"
         Date eventDate = event.getEventDate();
         if (eventDate != null) {
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
             dateText.setText("Event Date: " + dateFormat.format(eventDate));
         } else {
-            // Fall back to registration date range if no event date
             dateText.setText("Event Date: TBA");
         }
 

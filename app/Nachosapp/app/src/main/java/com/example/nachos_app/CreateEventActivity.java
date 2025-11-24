@@ -117,7 +117,6 @@ public class CreateEventActivity extends AppCompatActivity {
         backButton.setOnClickListener(v -> finish());
 
         // Set up date pickers
-        // Set up date pickers - unified method for all date selections
         eventDateTextView.setOnClickListener(v -> showDatePicker("event"));
         registrationStartTextView.setOnClickListener(v -> showDatePicker("registrationStart"));
         registrationEndTextView.setOnClickListener(v -> showDatePicker("registrationEnd"));
@@ -164,7 +163,6 @@ public class CreateEventActivity extends AppCompatActivity {
                         registrationEndDate = selectedDate.getTime();
                         registrationEndTextView.setText(sdf.format(registrationEndDate));
                     } else {
-                        // Event date and registration start: both set to beginning of day
                         selectedDate.set(Calendar.HOUR_OF_DAY, 0);
                         selectedDate.set(Calendar.MINUTE, 0);
                         selectedDate.set(Calendar.SECOND, 1);
@@ -172,7 +170,7 @@ public class CreateEventActivity extends AppCompatActivity {
                         if (dateType.equals("event")) {
                             eventDate = selectedDate.getTime();
                             eventDateTextView.setText(sdf.format(eventDate));
-                        } else { // registrationStart
+                        } else {
                             registrationStartDate = selectedDate.getTime();
                             registrationStartTextView.setText(sdf.format(registrationStartDate));
                         }

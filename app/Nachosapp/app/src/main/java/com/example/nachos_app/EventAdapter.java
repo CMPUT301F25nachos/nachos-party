@@ -12,7 +12,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -88,6 +87,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         }
 
         boolean registrationOpen = event.isRegistrationOpen();
+        boolean registrationUpcoming = event.isRegistrationUpcoming();
 
         // Dim the item if registration is not open
         holder.itemView.setAlpha(registrationOpen ? 1f : 0.4f);
@@ -95,29 +95,33 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         // Display remaining spots
         int remainingSpots = event.getRemainingSpots();
         if (remainingSpots == -1) {
-            // Unlimited spots available
             holder.spotsTextView.setText("Unlimited spots!");
             holder.spotsTextView.setTextColor(Color.parseColor("#2E7D32")); // Green
         } else if (remainingSpots > 0) {
-            // Some spots remaining
             holder.spotsTextView.setText(remainingSpots + " spots remaining!");
             holder.spotsTextView.setTextColor(Color.parseColor("#2E7D32")); // Green
         } else {
-            // Waitlist is full
             holder.spotsTextView.setText("Waitlist full");
             holder.spotsTextView.setTextColor(Color.parseColor("#C62828")); // Red
         }
 
-        // Show when registration closes
+        // Show registration status based on whether it's open, upcoming, or closed
         SimpleDateFormat regDateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-        String closeDate = regDateFormat.format(event.getRegistrationEndDate());
-        holder.registrationTextView.setText("Registration closes on " + closeDate);
+        if (registrationOpen) {
+            String closeDate = regDateFormat.format(event.getRegistrationEndDate());
+            holder.registrationTextView.setText("Registration closes on " + closeDate);
+        } else if (registrationUpcoming) {
+            String openDate = regDateFormat.format(event.getRegistrationStartDate());
+            holder.registrationTextView.setText("Registration opens on " + openDate);
+        } else {
+            holder.registrationTextView.setText("Registration closed");
+        }
 
         // Load event banner image
         ImageUtils.loadBase64Image(holder.bannerImageView, event.getBannerUrl(),
                 R.drawable.ic_camera_placeholder);
 
-        // Set click listener to open event details
+        // Click listener to view event details
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, EventDetailsActivity.class);
             intent.putExtra("eventId", eventId);
