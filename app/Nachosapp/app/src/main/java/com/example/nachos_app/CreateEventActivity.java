@@ -156,7 +156,6 @@ public class CreateEventActivity extends AppCompatActivity {
 
                     // Registration end gets end of day, everything else gets start of day
                     if (dateType.equals("registrationEnd")) {
-                        // Registration end: set to end of day
                         selectedDate.set(Calendar.HOUR_OF_DAY, 23);
                         selectedDate.set(Calendar.MINUTE, 59);
                         selectedDate.set(Calendar.SECOND, 59);
@@ -356,7 +355,7 @@ public class CreateEventActivity extends AppCompatActivity {
         // Generate QR code data
         String qrCodeData = "event://" + eventId;
 
-        // Generate dateRange string for display (registration period)
+        // Generate dateRange string for display
         String dateRange = generateDateRangeString(registrationStartDate, registrationEndDate);
 
         Event event = new Event(organizerId, organizerName, eventName, description, dateRange,

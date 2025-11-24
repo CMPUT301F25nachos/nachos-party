@@ -77,7 +77,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         // Display event date if available, otherwise show "Date TBA"
         Date eventDate = event.getEventDate();
         if (eventDate != null) {
-            // Show the event date
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
             holder.dateTimeTextView.setText("Event date: " + dateFormat.format(eventDate));
             holder.dateTimeTextView.setVisibility(View.VISIBLE);
@@ -117,9 +116,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.registrationTextView.setText("Registration closed");
         }
 
-        // Load event banner image
-        ImageUtils.loadBase64Image(holder.bannerImageView, event.getBannerUrl(),
-                R.drawable.ic_camera_placeholder);
+        // Load banner
+        ImageUtils.loadBase64Image(holder.bannerImageView, event.getBannerUrl(), R.drawable.ic_camera_placeholder);
 
         // Click listener to view event details
         holder.itemView.setOnClickListener(v -> {
