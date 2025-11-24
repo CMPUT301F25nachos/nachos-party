@@ -33,10 +33,13 @@ local.properties
 .gradle/
 build/
 
-# KEEP the gradle folder for version catalogs
+# ⚠️ KEEP the gradle folder for version catalogs
 !gradle/
 gradle/wrapper/gradle-wrapper.properties
 gradle/wrapper/gradle-wrapper.jar
+
+gradlew
+gradlew.bat
 
 ### Operating System Files ###
 .DS_Store
