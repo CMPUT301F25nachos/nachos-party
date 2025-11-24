@@ -2,6 +2,7 @@ package com.example.nachos_app;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -65,33 +67,57 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         String eventId = eventIdList.get(position);
 
         holder.eventNameTextView.setText(event.getEventName());
-        holder.dateTimeTextView.setText(event.getDateTimeRange());
+
+        String organizerName = event.getOrganizerName();
+        if (organizerName != null && !organizerName.trim().isEmpty()) {
+            holder.organizerTextView.setText("Organized by " + organizerName);
+        } else {
+            holder.organizerTextView.setText("Organized by Unknown");
+        }
+
+        // Display event date if available, otherwise show "Date TBA"
+        Date eventDate = event.getEventDate();
+        if (eventDate != null) {
+            // Show the event date
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+            holder.dateTimeTextView.setText("Event date: " + dateFormat.format(eventDate));
+            holder.dateTimeTextView.setVisibility(View.VISIBLE);
+        } else {
+            holder.dateTimeTextView.setText("Event date: TBA");
+            holder.dateTimeTextView.setVisibility(View.VISIBLE);
+        }
 
         boolean registrationOpen = event.isRegistrationOpen();
-        boolean registrationUpcoming = event.isRegistrationUpcoming();
-        DateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
         // Dim the item if registration is not open
         holder.itemView.setAlpha(registrationOpen ? 1f : 0.4f);
 
-        // Set spots/status text based on registration period
-        if (registrationOpen) {
-            // Registration is currently open
-            String closeDate = dateFormat.format(event.getRegistrationEndDate());
-            holder.spotsTextView.setText("Registration closes on " + closeDate);
-        } else if (registrationUpcoming) {
-            // Registration hasn't started yet
-            String startDate = dateFormat.format(event.getRegistrationStartDate());
-            holder.spotsTextView.setText("Registration opens on " + startDate);
+        // Display remaining spots
+        int remainingSpots = event.getRemainingSpots();
+        if (remainingSpots == -1) {
+            // Unlimited spots available
+            holder.spotsTextView.setText("Unlimited spots!");
+            holder.spotsTextView.setTextColor(Color.parseColor("#2E7D32")); // Green
+        } else if (remainingSpots > 0) {
+            // Some spots remaining
+            holder.spotsTextView.setText(remainingSpots + " spots remaining!");
+            holder.spotsTextView.setTextColor(Color.parseColor("#2E7D32")); // Green
         } else {
-            // Registration is closed
-            holder.spotsTextView.setText("Registration closed");
+            // Waitlist is full
+            holder.spotsTextView.setText("Waitlist full");
+            holder.spotsTextView.setTextColor(Color.parseColor("#C62828")); // Red
         }
 
-        // Load banner
-        ImageUtils.loadBase64Image(holder.bannerImageView, event.getBannerUrl(), R.drawable.ic_camera_placeholder);
+        // Show when registration closes
+        SimpleDateFormat regDateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+        String closeDate = regDateFormat.format(event.getRegistrationEndDate());
+        holder.registrationTextView.setText("Registration closes on " + closeDate);
 
-        // Click listener to view event details
+        // Load event banner image
+        ImageUtils.loadBase64Image(holder.bannerImageView, event.getBannerUrl(),
+                R.drawable.ic_camera_placeholder);
+
+        // Set click listener to open event details
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, EventDetailsActivity.class);
             intent.putExtra("eventId", eventId);
@@ -107,15 +133,19 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     static class EventViewHolder extends RecyclerView.ViewHolder {
         ImageView bannerImageView;
         TextView eventNameTextView;
+        TextView organizerTextView;
         TextView dateTimeTextView;
         TextView spotsTextView;
+        TextView registrationTextView;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
             bannerImageView = itemView.findViewById(R.id.eventBannerImageView);
             eventNameTextView = itemView.findViewById(R.id.eventNameTextView);
+            organizerTextView = itemView.findViewById(R.id.eventOrganizerTextView);
             dateTimeTextView = itemView.findViewById(R.id.eventDateTextView);
             spotsTextView = itemView.findViewById(R.id.eventSpotsTextView);
+            registrationTextView = itemView.findViewById(R.id.eventRegistrationTextView);
         }
     }
 }

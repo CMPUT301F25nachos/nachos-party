@@ -21,13 +21,14 @@
             android:background="#E0E0E0"
             android:contentDescription="Event banner"/>
 
-        <!-- Event Info -->
+        <!-- Event Information Container -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Event Name -->
             <TextView
                 android:id="@+id/eventNameTextView"
                 android:layout_width="wrap_content"
@@ -37,26 +38,47 @@
                 android:textSize="18sp"
                 android:textStyle="bold"/>
 
+            <!-- Organizer Name -->
+            <TextView
+                android:id="@+id/eventOrganizerTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Organized by John Doe"
+                android:textColor="#000000"
+                android:textSize="13sp"
+                android:layout_marginTop="4dp"/>
+
+            <!-- Event Date (when the event occurs) -->
             <TextView
                 android:id="@+id/eventDateTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sep 5-20"
-                android:textColor="#666666"
-                android:textSize="14sp"
+                android:text="Event date: Sep 5, 2025"
+                android:textColor="#000000"
+                android:textSize="13sp"
                 android:layout_marginTop="4dp"/>
 
+            <!-- Remaining Spots -->
             <TextView
                 android:id="@+id/eventSpotsTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="15 spots"
-                android:textColor="#666666"
+                android:text="15 spots remaining!"
+                android:textColor="#2E7D32"
                 android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="4dp"/>
+
+            <!-- Registration Close Date -->
+            <TextView
+                android:id="@+id/eventRegistrationTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Registration closes on Dec 31, 2025"
+                android:textColor="#666666"
+                android:textSize="12sp"
                 android:layout_marginTop="4dp"/>
 
         </LinearLayout>
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

@@ -71,13 +71,12 @@ public class HomeViewModel extends ViewModel {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Event event = document.toObject(Event.class);
 
-                        // Only show events with open registration
-                        if (event.isRegistrationOpen()) {
-                            if (!event.isWaitlistFull()) {
-                                openEvents.add(event);
-                                openIds.add(document.getId());
-                            }
+                        // Only show events with open registration and available spots
+                        if (event.isRegistrationOpen() && !event.isWaitlistFull()) {
+                            openEvents.add(event);
+                            openIds.add(document.getId());
                         } else if (event.isRegistrationUpcoming()) {
+                            // Show upcoming events (registration hasn't started yet)
                             upcomingEvents.add(event);
                             upcomingIds.add(document.getId());
                         }
