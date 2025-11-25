@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -35,6 +36,10 @@ public class DashboardFragment extends Fragment {
 
     private FirebaseFirestore db;
     private String currentUserId;
+
+    private List<Event> allUserEvents = new ArrayList<>();
+    private List<String> allUserEventIds = new ArrayList<>();
+    private String currentFilter = "All";
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -72,8 +77,20 @@ public class DashboardFragment extends Fragment {
 
     private void setupFilterButton() {
         filterButton.setOnClickListener(v -> {
-            // TODO: Implement filter functionality
-            Toast.makeText(requireContext(), "Filter coming soon", Toast.LENGTH_SHORT).show();
+            PopupMenu popup = new PopupMenu(requireContext(), filterButton);
+            popup.getMenu().add("All");
+            popup.getMenu().add("Created");
+            popup.getMenu().add("Joined");
+            popup.getMenu().add("Ongoing");
+            popup.getMenu().add("Past");
+            popup.getMenu().add("Future");
+
+            popup.setOnMenuItemClickListener(item -> {
+                currentFilter = item.getTitle().toString();
+                applyFilter(currentFilter);
+                return true;
+            });
+            popup.show();
         });
     }
 
@@ -109,7 +126,7 @@ public class DashboardFragment extends Fragment {
         final int[] processedCount = {0};
 
         if (totalEvents == 0) {
-            eventAdapter.setEvents(userEvents, userEventIds);
+            updateMasterListAndFilter(userEvents, userEventIds);
             return;
         }
 
@@ -124,7 +141,7 @@ public class DashboardFragment extends Fragment {
 
                 processedCount[0]++;
                 if (processedCount[0] == totalEvents) {
-                    eventAdapter.setEvents(userEvents, userEventIds);
+                    updateMasterListAndFilter(userEvents, userEventIds);
                 }
                 continue;
             }
@@ -133,10 +150,54 @@ public class DashboardFragment extends Fragment {
             checkIfUserIsParticipant(eventId, event, userEvents, userEventIds, () -> {
                 processedCount[0]++;
                 if (processedCount[0] == totalEvents) {
-                    eventAdapter.setEvents(userEvents, userEventIds);
+                    updateMasterListAndFilter(userEvents, userEventIds);
                 }
             });
         }
+    }
+
+    private void updateMasterListAndFilter(List<Event> events, List<String> ids) {
+        allUserEvents = new ArrayList<>(events);
+        allUserEventIds = new ArrayList<>(ids);
+        applyFilter(currentFilter);
+    }
+
+    private void applyFilter(String filter) {
+        List<Event> filteredEvents = new ArrayList<>();
+        List<String> filteredIds = new ArrayList<>();
+
+        for (int i = 0; i < allUserEvents.size(); i++) {
+            Event event = allUserEvents.get(i);
+            String id = allUserEventIds.get(i);
+            boolean matches = false;
+
+            switch (filter) {
+                case "All":
+                    matches = true;
+                    break;
+                case "Created":
+                    matches = event.getOrganizerId().equals(currentUserId);
+                    break;
+                case "Joined":
+                    matches = !event.getOrganizerId().equals(currentUserId);
+                    break;
+                case "Ongoing": // Registration Open
+                    matches = event.isRegistrationOpen();
+                    break;
+                case "Past": // Registration Closed
+                    matches = !event.isRegistrationOpen() && !event.isRegistrationUpcoming();
+                    break;
+                case "Future": // Registration Upcoming
+                    matches = event.isRegistrationUpcoming();
+                    break;
+            }
+
+            if (matches) {
+                filteredEvents.add(event);
+                filteredIds.add(id);
+            }
+        }
+        eventAdapter.setEvents(filteredEvents, filteredIds);
     }
 
     private void checkIfUserIsParticipant(String eventId, Event event,
