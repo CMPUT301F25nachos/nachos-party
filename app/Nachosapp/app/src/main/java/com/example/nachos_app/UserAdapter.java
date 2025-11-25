@@ -67,8 +67,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         String uid = userIds.get(position);
         Map<String, Object> data = userDataList.get(position);
 
-        // Display UID
-        holder.nameTextView.setText("User: " + uid.substring(0, Math.min(8, uid.length())));
+        // Prefer displaying the entrant's name; fall back to a shortened UID
+        holder.nameTextView.setText(getDisplayName(uid, data));
 
         // Display timestamp based on mode
         String timestampLabel = getTimestampLabel();
@@ -91,6 +91,17 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         } else {
             holder.statusTextView.setVisibility(View.GONE);
         }
+    }
+
+    private String getDisplayName(String uid, Map<String, Object> data) {
+        Object nameObj = data.get("name");
+        if (nameObj instanceof String) {
+            String name = ((String) nameObj).trim();
+            if (!name.isEmpty()) {
+                return name;
+            }
+        }
+        return "User: " + uid.substring(0, Math.min(8, uid.length()));
     }
 
     /**
