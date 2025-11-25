@@ -19,7 +19,6 @@ import java.util.List;
  * Filters events based on user participation status (organizer, waitlist, selected, enrolled, cancelled).
  */
 public class DashboardViewModel extends ViewModel {
-
     private final MutableLiveData<List<Event>> mEvents;
     private final MutableLiveData<List<String>> mEventIds;
     private final MutableLiveData<Boolean> mLoading;

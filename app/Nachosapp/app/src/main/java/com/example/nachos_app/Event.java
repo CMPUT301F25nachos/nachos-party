@@ -12,7 +12,7 @@ public class Event {
     private String organizerName;
     private String eventName;
     private String description;
-    private String dateTimeRange; // e.g., "Dec 10-20"
+    private String registrationRange;
     private Date registrationStartDate;
     private Date registrationEndDate;
     private Date eventDate; // optional
@@ -33,7 +33,7 @@ public class Event {
      * @param organizerName name of the organizer
      * @param eventName name/title of the event
      * @param description description of the event
-     * @param dateTimeRange date range (e.g., "Dec 10-20")
+     * @param registrationRange registration range
      * @param registrationStartDate registration opens
      * @param registrationEndDate registration closes
      * @param eventDate date when the event occurs (can be null)
@@ -45,7 +45,7 @@ public class Event {
      * @param eventLocation optional event's location
      */
     public Event(String organizerId, String organizerName, String eventName,
-                 String description, String dateTimeRange, Date registrationStartDate,
+                 String description, String registrationRange, Date registrationStartDate,
                  Date registrationEndDate, Date eventDate, Integer maxParticipants,
                  String bannerUrl, String qrCodeUrl, String qrCodeData, Date createdAt,
                  String eventLocation) {
@@ -53,7 +53,7 @@ public class Event {
         this.organizerName = organizerName;
         this.eventName = eventName;
         this.description = description;
-        this.dateTimeRange = dateTimeRange;
+        this.registrationRange = registrationRange;
         this.registrationStartDate = registrationStartDate;
         this.registrationEndDate = registrationEndDate;
         this.eventDate = eventDate;
@@ -70,7 +70,7 @@ public class Event {
     public String getOrganizerName() { return organizerName; }
     public String getEventName() { return eventName; }
     public String getDescription() { return description; }
-    public String getDateTimeRange() { return dateTimeRange; }
+    public String getRegistrationRange() { return registrationRange; }
     public Date getRegistrationStartDate() { return registrationStartDate; }
     public Date getRegistrationEndDate() { return registrationEndDate; }
     public Date getEventDate() { return eventDate; }
@@ -86,7 +86,7 @@ public class Event {
     public void setOrganizerName(String organizerName) { this.organizerName = organizerName; }
     public void setEventName(String eventName) { this.eventName = eventName; }
     public void setDescription(String description) { this.description = description; }
-    public void setDateTimeRange(String dateTimeRange) { this.dateTimeRange = dateTimeRange; }
+    public void setRegistrationRange(String registrationRange) { this.registrationRange = registrationRange; }
     public void setRegistrationStartDate(Date registrationStartDate) { this.registrationStartDate = registrationStartDate; }
     public void setRegistrationEndDate(Date registrationEndDate) { this.registrationEndDate = registrationEndDate; }
     public void setEventDate(Date eventDate) { this.eventDate = eventDate; }
