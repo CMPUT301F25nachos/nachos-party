@@ -49,6 +49,8 @@ public class CreateEventActivity extends AppCompatActivity {
     private EditText eventLocationEditText;
     private TextView registrationStartTextView;
     private TextView registrationEndTextView;
+    private TextView eventDateTextView;
+    private Date eventDate;
     private CheckBox enableGeoLocationCheckBox;
     private ImageView bannerPreviewImageView;
     private Button uploadBannerButton;
@@ -105,6 +107,7 @@ public class CreateEventActivity extends AppCompatActivity {
         eventLocationEditText = findViewById(R.id.eventLocationEditText);
         registrationStartTextView = findViewById(R.id.registrationStartTextView);
         registrationEndTextView = findViewById(R.id.registrationEndTextView);
+        eventDateTextView = findViewById(R.id.eventDateTextView);
         enableGeoLocationCheckBox = findViewById(R.id.enableGeoLocationCheckBox);
         bannerPreviewImageView = findViewById(R.id.bannerPreviewImageView);
         uploadBannerButton = findViewById(R.id.uploadBannerButton);
@@ -114,8 +117,9 @@ public class CreateEventActivity extends AppCompatActivity {
         backButton.setOnClickListener(v -> finish());
 
         // Set up date pickers
-        registrationStartTextView.setOnClickListener(v -> showDatePicker(true));
-        registrationEndTextView.setOnClickListener(v -> showDatePicker(false));
+        eventDateTextView.setOnClickListener(v -> showDatePicker("event"));
+        registrationStartTextView.setOnClickListener(v -> showDatePicker("registrationStart"));
+        registrationEndTextView.setOnClickListener(v -> showDatePicker("registrationEnd"));
 
         // GeoLocation checkbox
         enableGeoLocationCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -136,37 +140,39 @@ public class CreateEventActivity extends AppCompatActivity {
     }
 
     /**
-     * Displays a date picker dialog for selecting registration dates.
-     * Sets time to 00:01 for start dates and 23:59 for end dates.
-     * @param isStartDate true for registration start, false for end date
+     * Displays a date picker dialog for selecting any date.
+     * Sets time to 00:00:01 for event and registration start dates.
+     * Sets time to 23:59:59 for registration end date.
+     * @param dateType Either "event", "registrationStart", or "registrationEnd"
      */
-    private void showDatePicker(boolean isStartDate) {
+    private void showDatePicker(String dateType) {
         Calendar calendar = Calendar.getInstance();
         DatePickerDialog datePickerDialog = new DatePickerDialog(this,
                 (view, year, month, dayOfMonth) -> {
                     Calendar selectedDate = Calendar.getInstance();
                     selectedDate.set(year, month, dayOfMonth);
 
-                    if (isStartDate) {
-                        // Set time to 0:01 (00:01:00)
-                        selectedDate.set(Calendar.HOUR_OF_DAY, 0);
-                        selectedDate.set(Calendar.MINUTE, 1);
-                        selectedDate.set(Calendar.SECOND, 0);
-                        selectedDate.set(Calendar.MILLISECOND, 0);
-                        registrationStartDate = selectedDate.getTime();
+                    SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                        registrationStartTextView.setText(sdf.format(registrationStartDate));
-                    } else {
-                        // Set time to 23:59 (23:59:59)
+                    // Registration end gets end of day, everything else gets start of day
+                    if (dateType.equals("registrationEnd")) {
                         selectedDate.set(Calendar.HOUR_OF_DAY, 23);
                         selectedDate.set(Calendar.MINUTE, 59);
                         selectedDate.set(Calendar.SECOND, 59);
-                        selectedDate.set(Calendar.MILLISECOND, 999);
                         registrationEndDate = selectedDate.getTime();
-
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                         registrationEndTextView.setText(sdf.format(registrationEndDate));
+                    } else {
+                        selectedDate.set(Calendar.HOUR_OF_DAY, 0);
+                        selectedDate.set(Calendar.MINUTE, 0);
+                        selectedDate.set(Calendar.SECOND, 1);
+
+                        if (dateType.equals("event")) {
+                            eventDate = selectedDate.getTime();
+                            eventDateTextView.setText(sdf.format(eventDate));
+                        } else {
+                            registrationStartDate = selectedDate.getTime();
+                            registrationStartTextView.setText(sdf.format(registrationStartDate));
+                        }
                     }
                 },
                 calendar.get(Calendar.YEAR),
@@ -215,6 +221,25 @@ public class CreateEventActivity extends AppCompatActivity {
         if (registrationEndDate.before(registrationStartDate)) {
             Toast.makeText(this, "Registration end date must be after start date", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        // Validate event date if provided
+        if (eventDate != null) {
+            // Event date must be at least 1 week after registration closes
+            Calendar registrationEndCal = Calendar.getInstance();
+            registrationEndCal.setTime(registrationEndDate);
+
+            Calendar oneWeekAfterRegEnd = (Calendar) registrationEndCal.clone();
+            oneWeekAfterRegEnd.add(Calendar.DAY_OF_YEAR, 7);
+
+            Calendar eventCal = Calendar.getInstance();
+            eventCal.setTime(eventDate);
+
+            if (eventCal.before(oneWeekAfterRegEnd)) {
+                Toast.makeText(this, "Event date must be at least 1 week after registration closes",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
         }
 
         Integer maxParticipants = null;
@@ -334,9 +359,8 @@ public class CreateEventActivity extends AppCompatActivity {
         String dateRange = generateDateRangeString(registrationStartDate, registrationEndDate);
 
         Event event = new Event(organizerId, organizerName, eventName, description, dateRange,
-                registrationStartDate, registrationEndDate, maxParticipants, bannerBase64,
-                null, // QR code will be generated next
-                qrCodeData, new Date(), eventLocation);
+                registrationStartDate, registrationEndDate, eventDate, maxParticipants,
+                bannerBase64, null, qrCodeData, new Date(), eventLocation);
 
         db.collection("events").document(eventId)
                 .set(event).addOnSuccessListener(aVoid -> {

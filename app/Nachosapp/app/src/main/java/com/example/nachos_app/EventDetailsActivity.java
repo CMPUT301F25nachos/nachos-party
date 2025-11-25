@@ -30,9 +30,6 @@ import java.util.Locale;
  * statistics, while entrants see the join/leave waitlist button.
  */
 public class EventDetailsActivity extends AppCompatActivity {
-
-    private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-
     // Entrant views
     private ImageView bannerImage;
     private TextView titleText;
@@ -288,8 +285,14 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         descriptionText.setText(event.getDescription());
 
-        String dateRange = event.getDateTimeRange();
-        dateText.setText("Date and Time: " + dateRange);
+        // Display event date if available, otherwise show "TBA"
+        Date eventDate = event.getEventDate();
+        if (eventDate != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+            dateText.setText("Event Date: " + dateFormat.format(eventDate));
+        } else {
+            dateText.setText("Event Date: TBA");
+        }
 
         Integer maxParticipants = event.getMaxParticipants();
         spotsText.setText("Total spots: " +
@@ -401,9 +404,15 @@ public class EventDetailsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Formats and displays the registration period.
+     * @param start Registration start date
+     * @param end Registration end date
+     */
     private void setRegistrationText(Date start, Date end) {
-        String text = "Registration: " + DATE_FORMAT.format(start)
-                + " – " + DATE_FORMAT.format(end);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+        String text = "Registration: " + dateFormat.format(start)
+                + " - " + dateFormat.format(end);
         registrationPeriodText.setText(text);
     }
 

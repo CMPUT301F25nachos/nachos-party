@@ -15,6 +15,7 @@ public class Event {
     private String dateTimeRange; // e.g., "Dec 10-20"
     private Date registrationStartDate;
     private Date registrationEndDate;
+    private Date eventDate; // optional
     private Integer maxParticipants; // null = unlimited
     private String eventLocation; // optional
     private String bannerUrl; // Base64 encoded image
@@ -35,6 +36,7 @@ public class Event {
      * @param dateTimeRange date range (e.g., "Dec 10-20")
      * @param registrationStartDate registration opens
      * @param registrationEndDate registration closes
+     * @param eventDate date when the event occurs (can be null)
      * @param maxParticipants Maximum waitlist capacity (null for unlimited)
      * @param bannerUrl Base64 encoded event poster image
      * @param qrCodeUrl Base64 encoded QR code image
@@ -44,8 +46,9 @@ public class Event {
      */
     public Event(String organizerId, String organizerName, String eventName,
                  String description, String dateTimeRange, Date registrationStartDate,
-                 Date registrationEndDate, Integer maxParticipants, String bannerUrl,
-                 String qrCodeUrl, String qrCodeData, Date createdAt, String eventLocation) {
+                 Date registrationEndDate, Date eventDate, Integer maxParticipants,
+                 String bannerUrl, String qrCodeUrl, String qrCodeData, Date createdAt,
+                 String eventLocation) {
         this.organizerId = organizerId;
         this.organizerName = organizerName;
         this.eventName = eventName;
@@ -53,6 +56,7 @@ public class Event {
         this.dateTimeRange = dateTimeRange;
         this.registrationStartDate = registrationStartDate;
         this.registrationEndDate = registrationEndDate;
+        this.eventDate = eventDate;
         this.maxParticipants = maxParticipants;
         this.bannerUrl = bannerUrl;
         this.qrCodeUrl = qrCodeUrl;
@@ -69,6 +73,7 @@ public class Event {
     public String getDateTimeRange() { return dateTimeRange; }
     public Date getRegistrationStartDate() { return registrationStartDate; }
     public Date getRegistrationEndDate() { return registrationEndDate; }
+    public Date getEventDate() { return eventDate; }
     public Integer getMaxParticipants() { return maxParticipants; }
     public String getBannerUrl() { return bannerUrl; }
     public String getQrCodeUrl() { return qrCodeUrl; }
@@ -84,6 +89,7 @@ public class Event {
     public void setDateTimeRange(String dateTimeRange) { this.dateTimeRange = dateTimeRange; }
     public void setRegistrationStartDate(Date registrationStartDate) { this.registrationStartDate = registrationStartDate; }
     public void setRegistrationEndDate(Date registrationEndDate) { this.registrationEndDate = registrationEndDate; }
+    public void setEventDate(Date eventDate) { this.eventDate = eventDate; }
     public void setMaxParticipants(Integer maxParticipants) { this.maxParticipants = maxParticipants; }
     public void setBannerUrl(String bannerUrl) { this.bannerUrl = bannerUrl; }
     public void setQrCodeUrl(String qrCodeUrl) { this.qrCodeUrl = qrCodeUrl; }
@@ -116,5 +122,16 @@ public class Event {
     public boolean isRegistrationUpcoming() {
         Date now = new Date();
         return now.before(registrationStartDate);
+    }
+
+    /**
+     * Calculates the number of remaining spots in the waitlist.
+     * @return Number of remaining spots, or -1 if unlimited
+     */
+    public int getRemainingSpots() {
+        if (maxParticipants == null) {
+            return -1; // Unlimited
+        }
+        return Math.max(0, maxParticipants - currentWaitlistCount);
     }
 }
