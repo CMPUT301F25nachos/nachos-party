@@ -36,9 +36,22 @@
                 android:padding="12dp"
                 android:text="Filter 🔽"
                 android:textColor="#FFFFFF" />
-
         </LinearLayout>
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/emptyStateTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No events here.\nCreate/Join one to get started!"
+        android:textSize="16sp"
+        android:textColor="#666666"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="@id/myEventsRecyclerView"
+        app:layout_constraintBottom_toBottomOf="@id/myEventsRecyclerView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- RecyclerView below header -->
     <androidx.recyclerview.widget.RecyclerView

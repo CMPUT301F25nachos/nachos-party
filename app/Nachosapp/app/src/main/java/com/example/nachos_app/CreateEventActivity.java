@@ -307,34 +307,43 @@ public class CreateEventActivity extends AppCompatActivity {
      */
     private void processBanner(String eventId, String eventName, String description, Integer maxParticipants,
                                String organizerId, String organizerName, String eventLocation) {
-        try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedBannerUri);
+        // Process image on background thread
+        new Thread(() -> {
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedBannerUri);
 
-            // Resize bitmap to reduce size (max width 600px for smaller file)
-            int maxWidth = 600;
-            int maxHeight = (int) (bitmap.getHeight() * (maxWidth / (double) bitmap.getWidth()));
-            Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
+                // Resize bitmap to reduce size (max width 600px for smaller file)
+                int maxWidth = 600;
+                int maxHeight = (int) (bitmap.getHeight() * (maxWidth / (double) bitmap.getWidth()));
+                Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
 
-            // Convert to base64
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
-            byte[] data = baos.toByteArray();
+                // Convert to base64
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+                byte[] data = baos.toByteArray();
 
-            // Check size (Firestore has 1MB limit per document)
-            if (data.length > 500000) {
-                Toast.makeText(this, "Image too large, please select a smaller image", Toast.LENGTH_LONG).show();
-                resetCreateButton();
-                return;
+                // Check size (Firestore has 1MB limit per document)
+                if (data.length > 500000) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Image too large, please select a smaller image", Toast.LENGTH_LONG).show();
+                        resetCreateButton();
+                    });
+                    return;
+                }
+
+                String base64Banner = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
+
+                // Save on main thread
+                runOnUiThread(() -> saveEventToFirestore(eventId, eventName, description, maxParticipants,
+                        organizerId, organizerName, base64Banner, eventLocation));
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Error processing banner", Toast.LENGTH_SHORT).show();
+                    resetCreateButton();
+                });
             }
-
-            String base64Banner = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
-
-            saveEventToFirestore(eventId, eventName, description, maxParticipants,
-                    organizerId, organizerName, base64Banner, eventLocation);
-        } catch (Exception e) {
-            Toast.makeText(this, "Error processing banner", Toast.LENGTH_SHORT).show();
-            resetCreateButton();
-        }
+        }).start();
     }
 
     /**
@@ -364,7 +373,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
         db.collection("events").document(eventId)
                 .set(event).addOnSuccessListener(aVoid -> {
-                    // Generate and save QR code
+                    Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
+                    finish(); // Exit immediately
+
+                    // Generate QR code in background
                     generateAndSaveQRCode(eventId, qrCodeData);
                 }).addOnFailureListener(e -> {
                     Toast.makeText(this, "Error creating event", Toast.LENGTH_SHORT).show();
@@ -415,29 +427,24 @@ public class CreateEventActivity extends AppCompatActivity {
      * @param qrCodeData The data to encode in the QR code
      */
     private void generateAndSaveQRCode(String eventId, String qrCodeData) {
-        try {
-            // Generate QR code bitmap
-            Bitmap qrCodeBitmap = generateQRCodeBitmap(qrCodeData, 512, 512);
+        new Thread(() -> {
+            try {
+                // Generate QR code bitmap
+                Bitmap qrCodeBitmap = generateQRCodeBitmap(qrCodeData, 512, 512);
 
-            // Convert bitmap to base64 string
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            qrCodeBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-            byte[] data = baos.toByteArray();
-            String base64QrCode = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
+                // Convert bitmap to base64 string
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                qrCodeBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                byte[] data = baos.toByteArray();
+                String base64QrCode = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
 
-            // Store base64 QR code in Firestore
-            db.collection("events").document(eventId)
-                    .update("qrCodeUrl", base64QrCode).addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }).addOnFailureListener(e -> {
-                        Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    });
-        } catch (Exception e) {
-            Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-            finish();
-        }
+                // Update Firestore with QR code
+                db.collection("events").document(eventId).update("qrCodeUrl", base64QrCode);
+            } catch (Exception e) {
+                // Log error
+                android.util.Log.e("CreateEventActivity", "Failed to generate QR code for event " + eventId, e);
+            }
+        }).start();
     }
 
     /**
