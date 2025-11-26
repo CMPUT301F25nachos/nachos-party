@@ -118,11 +118,19 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 .document(uid)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
+
+                    int index = userIds.indexOf(uid);
+                    if (index != -1) {
+                        userIds.remove(index);
+                        userDataList.remove(index);
+                        notifyItemRemoved(index);
+                    }
                     // Add to cancelled list
                     Map<String, Object> cancelledData = new HashMap<>();
                     cancelledData.put("uid", uid);
                     cancelledData.put("cancelledAt", FieldValue.serverTimestamp());
                     cancelledData.put("reason", "Manually Cancelled");
+
 
                     db.collection("events")
                             .document(eventId)
@@ -130,7 +138,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                             .document(uid)
                             .set(cancelledData)
                             .addOnSuccessListener(done ->
-                                    Toast.makeText(context, "Entrant cancelled", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Entrant cancelled", Toast.LENGTH_SHORT).show()
                             )
                             .addOnFailureListener(e ->
                                     Toast.makeText(context, "Failed to cancel entrant: " + e.getMessage(), Toast.LENGTH_SHORT).show()
