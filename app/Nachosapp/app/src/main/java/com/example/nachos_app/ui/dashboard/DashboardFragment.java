@@ -18,11 +18,7 @@ import com.example.nachos_app.EventAdapter;
 import com.example.nachos_app.databinding.FragmentDashboardBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -95,8 +91,9 @@ public class DashboardFragment extends Fragment {
     }
 
     /**
-     * Updates the events list in the adapter when both events and IDs are available.
-     * Ensures data consistency by checking that list sizes match.
+     * Updates the RecyclerView with events data.
+     * Shows empty state message if no events are available.
+     * Ensures events and IDs lists are synchronized before updating.
      */
     private void updateEventsList() {
         if (binding == null) return;
@@ -105,7 +102,15 @@ public class DashboardFragment extends Fragment {
         List<String> eventIds = dashboardViewModel.getEventIds().getValue();
 
         if (events != null && eventIds != null && events.size() == eventIds.size()) {
-            eventAdapter.setEvents(events, eventIds);
+            if (events.isEmpty()) {
+                binding.emptyStateTextView.setVisibility(View.VISIBLE);
+                binding.emptyStateTextView.setText("No events here.\nCreate/Join one to get started!");
+                binding.myEventsRecyclerView.setVisibility(View.GONE);
+            } else {
+                binding.emptyStateTextView.setVisibility(View.GONE);
+                binding.myEventsRecyclerView.setVisibility(View.VISIBLE);
+                eventAdapter.setEvents(events, eventIds);
+            }
         }
     }
 

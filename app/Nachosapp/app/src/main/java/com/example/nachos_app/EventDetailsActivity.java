@@ -220,7 +220,7 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         String qrCodeBase64 = currentEvent.getQrCodeUrl();
         if (qrCodeBase64 == null || qrCodeBase64.isEmpty()) {
-            Toast.makeText(this, "QR code not available", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "QR code not ready yet, please try again in a moment", Toast.LENGTH_SHORT).show();
             return;
         }
 

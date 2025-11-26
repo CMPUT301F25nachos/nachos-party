@@ -9,6 +9,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -16,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Activity for displaying lists of entrants in different states.
@@ -125,18 +129,45 @@ public class EntrantListActivity extends AppCompatActivity {
                         userDataList.add(data);
                     }
 
-                    adapter.setUsers(userIds, userDataList);
-
-                    if (userIds.isEmpty()) {
-                        Toast.makeText(this, "No entrants in this list",
-                                Toast.LENGTH_SHORT).show();
-                    }
+                    fetchUserProfiles(userIds, userDataList);
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load list: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                 });
     }
+
+    private void fetchUserProfiles(List<String> userIds, List<Map<String, Object>> userDataList) {
+    if (userIds.isEmpty()) {
+        adapter.setUsers(userIds, userDataList);
+        Toast.makeText(this, "No entrants in this list", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
+    for (String uid : userIds) {
+        tasks.add(db.collection("users").document(uid).get());
+    }
+
+    Tasks.whenAllSuccess(tasks)
+        .addOnSuccessListener(results -> {
+            for (int i = 0; i < results.size(); i++) {
+                DocumentSnapshot snapshot = (DocumentSnapshot) results.get(i);
+                String name = snapshot.getString("name");
+                if (name != null && !name.trim().isEmpty()) {
+                    userDataList.get(i).put("name", name.trim());
+                } 
+                // Else fallback is already ID-based from userDataList
+            }
+
+            adapter.setUsers(userIds, userDataList);
+        })
+        .addOnFailureListener(e -> {
+            // Worst case: fallback to IDs
+            adapter.setUsers(userIds, userDataList);
+        });
+}
+
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
