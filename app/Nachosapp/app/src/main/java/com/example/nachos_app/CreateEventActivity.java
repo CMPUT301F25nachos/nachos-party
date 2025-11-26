@@ -373,7 +373,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
         db.collection("events").document(eventId)
                 .set(event).addOnSuccessListener(aVoid -> {
-                    // Generate and save QR code
+                    Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
+                    finish(); // Exit immediately
+
+                    // Generate QR code in background
                     generateAndSaveQRCode(eventId, qrCodeData);
                 }).addOnFailureListener(e -> {
                     Toast.makeText(this, "Error creating event", Toast.LENGTH_SHORT).show();
@@ -435,24 +438,11 @@ public class CreateEventActivity extends AppCompatActivity {
                 byte[] data = baos.toByteArray();
                 String base64QrCode = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
 
-                runOnUiThread(() -> {
-                    // Store base64 QR code in Firestore
-                    db.collection("events").document(eventId)
-                            .update("qrCodeUrl", base64QrCode)
-                            .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                                finish();
-                            })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                                finish();
-                            });
-                });
+                // Update Firestore with QR code
+                db.collection("events").document(eventId).update("qrCodeUrl", base64QrCode);
             } catch (Exception e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                    finish();
-                });
+                // Log error
+                android.util.Log.e("CreateEventActivity", "Failed to generate QR code for event " + eventId, e);
             }
         }).start();
     }
