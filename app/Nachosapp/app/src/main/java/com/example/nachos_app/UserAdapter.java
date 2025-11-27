@@ -1,6 +1,7 @@
 package com.example.nachos_app;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
@@ -102,14 +104,14 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         //adds cancel button for any selected, waitlisted
         if (displayMode.equals("selected") || displayMode.equals("waitlist")){
             holder.cancelButton.setVisibility(View.VISIBLE);
-            holder.cancelButton.setOnClickListener(v -> cancelEntrant(uid, eventId));
+            holder.cancelButton.setOnClickListener(v -> cancelEntrant(uid, eventId, displayMode));
         }
         else{
             holder.cancelButton.setVisibility(View.GONE);
         }
     }
 
-    private void cancelEntrant(String uid, String eventId){
+    private void cancelEntrant(String uid, String eventId, String displayMode){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         // Remove from current list
         db.collection("events")
@@ -125,6 +127,16 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                         userDataList.remove(index);
                         notifyItemRemoved(index);
                     }
+                    if (displayMode.equals("waitlist")){
+                        db.collection("events")
+                                .document(eventId)
+                                .update("currentWaitlistCount", FieldValue.increment(-1))
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(context,
+                                    "Failed to update waitlist count: " + e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                                });
+                    }
                     // Add to cancelled list
                     Map<String, Object> cancelledData = new HashMap<>();
                     cancelledData.put("uid", uid);
@@ -137,9 +149,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                             .collection("cancelled")
                             .document(uid)
                             .set(cancelledData)
-                            .addOnSuccessListener(done ->
-                                Toast.makeText(context, "Entrant cancelled", Toast.LENGTH_SHORT).show()
-                            )
+                            .addOnSuccessListener(done -> {
+                                deleteSelectionNotification(uid, eventId);
+                                Toast.makeText(context, "Entrant cancelled", Toast.LENGTH_SHORT).show();
+                            })
                             .addOnFailureListener(e ->
                                     Toast.makeText(context, "Failed to cancel entrant: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                             );
@@ -149,6 +162,24 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                         Toast.makeText(context, "Failed to remove entrant: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
 
+    }
+    private void deleteSelectionNotification(String uid, String eventId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users")
+                .document(uid)
+                .collection("notifications")
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("type", "selected") // optional, if you use this
+                .get()
+                .addOnSuccessListener(query -> {
+                    for (DocumentSnapshot doc : query) {
+                        doc.getReference().delete();
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Log.e("CancelEntrant", "Failed to delete notification: " + e.getMessage())
+                );
     }
 
     private String getDisplayName(String uid, Map<String, Object> data) {
