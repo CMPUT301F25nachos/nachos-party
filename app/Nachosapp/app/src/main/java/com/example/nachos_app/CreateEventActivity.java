@@ -296,7 +296,6 @@ public class CreateEventActivity extends AppCompatActivity {
     /**
      * Processes the selected banner image by resizing and compressing it.
      * Limits image size to prevent Firestore document size issues (1MB limit).
-     * Max width: 600px, JPEG quality: 70%, Max size: 500KB
      * @param eventId ID of the event being created
      * @param eventName name of the event
      * @param description event description
