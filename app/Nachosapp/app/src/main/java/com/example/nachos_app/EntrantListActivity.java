@@ -84,7 +84,7 @@ public class EntrantListActivity extends AppCompatActivity {
 
     private void setupRecyclerView() {
         recyclerView = findViewById(R.id.entrantListRecyclerView);
-        adapter = new UserAdapter(this, listType);
+        adapter = new UserAdapter(this, listType, eventId);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
     }
