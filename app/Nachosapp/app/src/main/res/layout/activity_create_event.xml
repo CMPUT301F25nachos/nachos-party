@@ -104,6 +104,43 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
+                android:text="Event Location (Optional)"
+                android:textColor="#000000"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/eventLocationEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/rounded_edittext"
+                android:hint="ex. CAB, Room 301"
+                android:padding="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Event Date (Optional)"
+                android:textColor="#000000"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/eventDateTextView"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/rounded_edittext"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:hint="Select event date (optional)" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:text="Registration period"
                 android:textColor="#000000"
                 android:textSize="14sp" />
@@ -125,7 +162,7 @@
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:padding="12dp"
-                    android:text="2025-10-18" />
+                    android:hint="Start date" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -144,7 +181,7 @@
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:padding="12dp"
-                    android:text="2025-11-18" />
+                    android:hint="End date" />
             </LinearLayout>
 
             <CheckBox

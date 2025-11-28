@@ -40,8 +40,8 @@ public class EventTest {
         // Create test event
         event = new Event("organizer123", "Test Organizer",
                 "Test Event", "Test Description", "Dec 10-20",
-                pastDate, futureDate, 10, null, null,
-                "event://test123", currentDate);
+                pastDate, futureDate, null, 10, null, null,
+                "event://test123", currentDate, "");
     }
 
     @Test
@@ -158,5 +158,37 @@ public class EventTest {
         String bannerBase64 = "base64encodedstring";
         event.setBannerUrl(bannerBase64);
         assertEquals("Banner URL should match", bannerBase64, event.getBannerUrl());
+    }
+
+    @Test
+    public void testGetRemainingSpots_WithLimit() {
+        event.setMaxParticipants(10);
+        event.setCurrentWaitlistCount(3);
+
+        assertEquals("Should have 7 spots remaining", 7, event.getRemainingSpots());
+    }
+
+    @Test
+    public void testGetRemainingSpots_Unlimited() {
+        event.setMaxParticipants(null); // Unlimited
+        event.setCurrentWaitlistCount(100);
+
+        assertEquals("Unlimited should return -1", -1, event.getRemainingSpots());
+    }
+
+    @Test
+    public void testGetRemainingSpots_Full() {
+        event.setMaxParticipants(10);
+        event.setCurrentWaitlistCount(10);
+
+        assertEquals("Full waitlist should have 0 spots", 0, event.getRemainingSpots());
+    }
+
+    @Test
+    public void testGetRemainingSpots_OverCapacity() {
+        event.setMaxParticipants(10);
+        event.setCurrentWaitlistCount(15);
+
+        assertEquals("Over capacity should return 0", 0, event.getRemainingSpots());
     }
 }

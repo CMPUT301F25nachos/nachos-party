@@ -30,14 +30,13 @@ import java.util.Locale;
  * statistics, while entrants see the join/leave waitlist button.
  */
 public class EventDetailsActivity extends AppCompatActivity {
-
-    private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-
     // Entrant views
     private ImageView bannerImage;
     private TextView titleText;
     private TextView dateText;
     private TextView spotsText;
+    private TextView locationText;
+    private TextView organizerText;
     private TextView registrationPeriodText;
     private TextView descriptionText;
     private Button joinButton;
@@ -121,6 +120,8 @@ public class EventDetailsActivity extends AppCompatActivity {
         titleText = findViewById(R.id.eventTitleTextView);
         dateText = findViewById(R.id.eventDateTextView);
         spotsText = findViewById(R.id.eventSpotsTextView);
+        locationText = findViewById(R.id.eventLocationTextView);
+        organizerText = findViewById(R.id.eventOrganizerTextView);
         registrationPeriodText = findViewById(R.id.eventDrawPeriodTextView);
         descriptionText = findViewById(R.id.eventDescriptionTextView);
         joinButton = findViewById(R.id.joinWaitlistButton);
@@ -219,7 +220,7 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         String qrCodeBase64 = currentEvent.getQrCodeUrl();
         if (qrCodeBase64 == null || qrCodeBase64.isEmpty()) {
-            Toast.makeText(this, "QR code not available", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "QR code not ready yet, please try again in a moment", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -274,14 +275,37 @@ public class EventDetailsActivity extends AppCompatActivity {
 
     private void populateUI(Event event) {
         titleText.setText(event.getEventName());
+
+        String organizerName = event.getOrganizerName();
+        if (organizerName != null && !organizerName.trim().isEmpty()) {
+            organizerText.setText("Organizer: " + organizerName);
+        } else {
+            organizerText.setText("Organizer: Unknown");
+        }
+
         descriptionText.setText(event.getDescription());
 
-        String dateRange = event.getDateTimeRange();
-        dateText.setText("Date and Time: " + dateRange);
+        // Display event date if available, otherwise show "TBA"
+        Date eventDate = event.getEventDate();
+        if (eventDate != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+            dateText.setText("Event Date: " + dateFormat.format(eventDate));
+        } else {
+            dateText.setText("Event Date: TBA");
+        }
 
         Integer maxParticipants = event.getMaxParticipants();
         spotsText.setText("Total spots: " +
                 (maxParticipants != null ? maxParticipants : "Unlimited"));
+
+        // Display location if available
+        String eventLocation = event.getEventLocation();
+        if (eventLocation != null && !eventLocation.trim().isEmpty()) {
+            locationText.setText("Location: " + eventLocation);
+            locationText.setVisibility(View.VISIBLE);
+        } else {
+            locationText.setVisibility(View.GONE);
+        }
 
         setRegistrationText(event.getRegistrationStartDate(), event.getRegistrationEndDate());
 
@@ -380,9 +404,15 @@ public class EventDetailsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Formats and displays the registration period.
+     * @param start Registration start date
+     * @param end Registration end date
+     */
     private void setRegistrationText(Date start, Date end) {
-        String text = "Registration: " + DATE_FORMAT.format(start)
-                + " – " + DATE_FORMAT.format(end);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+        String text = "Registration: " + dateFormat.format(start)
+                + " - " + dateFormat.format(end);
         registrationPeriodText.setText(text);
     }
 

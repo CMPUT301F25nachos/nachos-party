@@ -46,8 +46,11 @@ public class CreateEventActivity extends AppCompatActivity {
     private EditText eventNameEditText;
     private EditText descriptionEditText;
     private EditText maxParticipantsEditText;
+    private EditText eventLocationEditText;
     private TextView registrationStartTextView;
     private TextView registrationEndTextView;
+    private TextView eventDateTextView;
+    private Date eventDate;
     private CheckBox enableGeoLocationCheckBox;
     private ImageView bannerPreviewImageView;
     private Button uploadBannerButton;
@@ -101,8 +104,10 @@ public class CreateEventActivity extends AppCompatActivity {
         eventNameEditText = findViewById(R.id.eventNameEditText);
         descriptionEditText = findViewById(R.id.descriptionEditText);
         maxParticipantsEditText = findViewById(R.id.maxParticipantsEditText);
+        eventLocationEditText = findViewById(R.id.eventLocationEditText);
         registrationStartTextView = findViewById(R.id.registrationStartTextView);
         registrationEndTextView = findViewById(R.id.registrationEndTextView);
+        eventDateTextView = findViewById(R.id.eventDateTextView);
         enableGeoLocationCheckBox = findViewById(R.id.enableGeoLocationCheckBox);
         bannerPreviewImageView = findViewById(R.id.bannerPreviewImageView);
         uploadBannerButton = findViewById(R.id.uploadBannerButton);
@@ -112,8 +117,9 @@ public class CreateEventActivity extends AppCompatActivity {
         backButton.setOnClickListener(v -> finish());
 
         // Set up date pickers
-        registrationStartTextView.setOnClickListener(v -> showDatePicker(true));
-        registrationEndTextView.setOnClickListener(v -> showDatePicker(false));
+        eventDateTextView.setOnClickListener(v -> showDatePicker("event"));
+        registrationStartTextView.setOnClickListener(v -> showDatePicker("registrationStart"));
+        registrationEndTextView.setOnClickListener(v -> showDatePicker("registrationEnd"));
 
         // GeoLocation checkbox
         enableGeoLocationCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -134,37 +140,39 @@ public class CreateEventActivity extends AppCompatActivity {
     }
 
     /**
-     * Displays a date picker dialog for selecting registration dates.
-     * Sets time to 00:01 for start dates and 23:59 for end dates.
-     * @param isStartDate true for registration start, false for end date
+     * Displays a date picker dialog for selecting any date.
+     * Sets time to 00:00:01 for event and registration start dates.
+     * Sets time to 23:59:59 for registration end date.
+     * @param dateType Either "event", "registrationStart", or "registrationEnd"
      */
-    private void showDatePicker(boolean isStartDate) {
+    private void showDatePicker(String dateType) {
         Calendar calendar = Calendar.getInstance();
         DatePickerDialog datePickerDialog = new DatePickerDialog(this,
                 (view, year, month, dayOfMonth) -> {
                     Calendar selectedDate = Calendar.getInstance();
                     selectedDate.set(year, month, dayOfMonth);
 
-                    if (isStartDate) {
-                        // Set time to 0:01 (00:01:00)
-                        selectedDate.set(Calendar.HOUR_OF_DAY, 0);
-                        selectedDate.set(Calendar.MINUTE, 1);
-                        selectedDate.set(Calendar.SECOND, 0);
-                        selectedDate.set(Calendar.MILLISECOND, 0);
-                        registrationStartDate = selectedDate.getTime();
+                    SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                        registrationStartTextView.setText(sdf.format(registrationStartDate));
-                    } else {
-                        // Set time to 23:59 (23:59:59)
+                    // Registration end gets end of day, everything else gets start of day
+                    if (dateType.equals("registrationEnd")) {
                         selectedDate.set(Calendar.HOUR_OF_DAY, 23);
                         selectedDate.set(Calendar.MINUTE, 59);
                         selectedDate.set(Calendar.SECOND, 59);
-                        selectedDate.set(Calendar.MILLISECOND, 999);
                         registrationEndDate = selectedDate.getTime();
-
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                         registrationEndTextView.setText(sdf.format(registrationEndDate));
+                    } else {
+                        selectedDate.set(Calendar.HOUR_OF_DAY, 0);
+                        selectedDate.set(Calendar.MINUTE, 0);
+                        selectedDate.set(Calendar.SECOND, 1);
+
+                        if (dateType.equals("event")) {
+                            eventDate = selectedDate.getTime();
+                            eventDateTextView.setText(sdf.format(eventDate));
+                        } else {
+                            registrationStartDate = selectedDate.getTime();
+                            registrationStartTextView.setText(sdf.format(registrationStartDate));
+                        }
                     }
                 },
                 calendar.get(Calendar.YEAR),
@@ -192,6 +200,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String eventName = eventNameEditText.getText().toString().trim();
         String description = descriptionEditText.getText().toString().trim();
         String maxParticipantsStr = maxParticipantsEditText.getText().toString().trim();
+        String eventLocation = eventLocationEditText.getText().toString().trim();
 
         // Validation
         if (eventName.isEmpty()) {
@@ -212,6 +221,25 @@ public class CreateEventActivity extends AppCompatActivity {
         if (registrationEndDate.before(registrationStartDate)) {
             Toast.makeText(this, "Registration end date must be after start date", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        // Validate event date if provided
+        if (eventDate != null) {
+            // Event date must be at least 1 week after registration closes
+            Calendar registrationEndCal = Calendar.getInstance();
+            registrationEndCal.setTime(registrationEndDate);
+
+            Calendar oneWeekAfterRegEnd = (Calendar) registrationEndCal.clone();
+            oneWeekAfterRegEnd.add(Calendar.DAY_OF_YEAR, 7);
+
+            Calendar eventCal = Calendar.getInstance();
+            eventCal.setTime(eventDate);
+
+            if (eventCal.before(oneWeekAfterRegEnd)) {
+                Toast.makeText(this, "Event date must be at least 1 week after registration closes",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
         }
 
         Integer maxParticipants = null;
@@ -238,10 +266,10 @@ public class CreateEventActivity extends AppCompatActivity {
         createEventButton.setText("Creating...");
 
         // Create event
-        createEvent(eventName, description, maxParticipants);
+        createEvent(eventName, description, maxParticipants, eventLocation);
     }
 
-    private void createEvent(String eventName, String description, Integer maxParticipants) {
+    private void createEvent(String eventName, String description, Integer maxParticipants, String eventLocation) {
         String eventId = db.collection("events").document().getId();
         String organizerId = currentUser.getUid();
 
@@ -253,10 +281,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
                     if (selectedBannerUri != null) {
                         // Process banner as base64
-                        processBanner(eventId, eventName, description, maxParticipants, organizerId, organizerName);
+                        processBanner(eventId, eventName, description, maxParticipants, organizerId, organizerName, eventLocation);
                     } else {
                         // Create event without banner
-                        saveEventToFirestore(eventId, eventName, description, maxParticipants, organizerId, organizerName, null);
+                        saveEventToFirestore(eventId, eventName, description, maxParticipants, organizerId, organizerName, null, eventLocation);
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -275,37 +303,47 @@ public class CreateEventActivity extends AppCompatActivity {
      * @param maxParticipants Maximum number of participants (null for unlimited)
      * @param organizerId organizer's user ID
      * @param organizerName organizer's name
+     * @param eventLocation optional event's location
      */
-    private void processBanner(String eventId, String eventName, String description,
-                               Integer maxParticipants, String organizerId, String organizerName) {
-        try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedBannerUri);
+    private void processBanner(String eventId, String eventName, String description, Integer maxParticipants,
+                               String organizerId, String organizerName, String eventLocation) {
+        // Process image on background thread
+        new Thread(() -> {
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedBannerUri);
 
-            // Resize bitmap to reduce size (max width 600px for smaller file)
-            int maxWidth = 600;
-            int maxHeight = (int) (bitmap.getHeight() * (maxWidth / (double) bitmap.getWidth()));
-            Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
+                // Resize bitmap to reduce size (max width 600px for smaller file)
+                int maxWidth = 600;
+                int maxHeight = (int) (bitmap.getHeight() * (maxWidth / (double) bitmap.getWidth()));
+                Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
 
-            // Convert to base64
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos); // Lower quality = smaller size
-            byte[] data = baos.toByteArray();
+                // Convert to base64
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+                byte[] data = baos.toByteArray();
 
-            // Check size (Firestore has 1MB limit per document)
-            if (data.length > 500000) { // 500KB safety margin
-                Toast.makeText(this, "Image too large, please select a smaller image", Toast.LENGTH_LONG).show();
-                resetCreateButton();
-                return;
+                // Check size (Firestore has 1MB limit per document)
+                if (data.length > 500000) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Image too large, please select a smaller image", Toast.LENGTH_LONG).show();
+                        resetCreateButton();
+                    });
+                    return;
+                }
+
+                String base64Banner = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
+
+                // Save on main thread
+                runOnUiThread(() -> saveEventToFirestore(eventId, eventName, description, maxParticipants,
+                        organizerId, organizerName, base64Banner, eventLocation));
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Error processing banner", Toast.LENGTH_SHORT).show();
+                    resetCreateButton();
+                });
             }
-
-            String base64Banner = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
-
-            saveEventToFirestore(eventId, eventName, description, maxParticipants,
-                    organizerId, organizerName, base64Banner);
-        } catch (Exception e) {
-            Toast.makeText(this, "Error processing banner", Toast.LENGTH_SHORT).show();
-            resetCreateButton();
-        }
+        }).start();
     }
 
     /**
@@ -318,9 +356,11 @@ public class CreateEventActivity extends AppCompatActivity {
      * @param organizerId organizer's user ID
      * @param organizerName organizer's name
      * @param bannerBase64 Base64 encoded banner image (null if no banner)
+     * @param eventLocation optional event's location
      */
     private void saveEventToFirestore(String eventId, String eventName, String description,
-                                      Integer maxParticipants, String organizerId, String organizerName, String bannerBase64) {
+                                      Integer maxParticipants, String organizerId,
+                                      String organizerName, String bannerBase64, String eventLocation) {
         // Generate QR code data
         String qrCodeData = "event://" + eventId;
 
@@ -328,13 +368,15 @@ public class CreateEventActivity extends AppCompatActivity {
         String dateRange = generateDateRangeString(registrationStartDate, registrationEndDate);
 
         Event event = new Event(organizerId, organizerName, eventName, description, dateRange,
-                registrationStartDate, registrationEndDate, maxParticipants, bannerBase64,
-                null, // QR code will be generated next
-                qrCodeData, new Date());
+                registrationStartDate, registrationEndDate, eventDate, maxParticipants,
+                bannerBase64, null, qrCodeData, new Date(), eventLocation);
 
         db.collection("events").document(eventId)
                 .set(event).addOnSuccessListener(aVoid -> {
-                    // Generate and save QR code
+                    Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
+                    finish(); // Exit immediately
+
+                    // Generate QR code in background
                     generateAndSaveQRCode(eventId, qrCodeData);
                 }).addOnFailureListener(e -> {
                     Toast.makeText(this, "Error creating event", Toast.LENGTH_SHORT).show();
@@ -385,29 +427,24 @@ public class CreateEventActivity extends AppCompatActivity {
      * @param qrCodeData The data to encode in the QR code
      */
     private void generateAndSaveQRCode(String eventId, String qrCodeData) {
-        try {
-            // Generate QR code bitmap
-            Bitmap qrCodeBitmap = generateQRCodeBitmap(qrCodeData, 512, 512);
+        new Thread(() -> {
+            try {
+                // Generate QR code bitmap
+                Bitmap qrCodeBitmap = generateQRCodeBitmap(qrCodeData, 512, 512);
 
-            // Convert bitmap to base64 string
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            qrCodeBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-            byte[] data = baos.toByteArray();
-            String base64QrCode = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
+                // Convert bitmap to base64 string
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                qrCodeBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                byte[] data = baos.toByteArray();
+                String base64QrCode = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
 
-            // Store base64 QR code in Firestore
-            db.collection("events").document(eventId)
-                    .update("qrCodeUrl", base64QrCode).addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }).addOnFailureListener(e -> {
-                        Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    });
-        } catch (Exception e) {
-            Toast.makeText(this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-            finish();
-        }
+                // Update Firestore with QR code
+                db.collection("events").document(eventId).update("qrCodeUrl", base64QrCode);
+            } catch (Exception e) {
+                // Log error
+                android.util.Log.e("CreateEventActivity", "Failed to generate QR code for event " + eventId, e);
+            }
+        }).start();
     }
 
     /**

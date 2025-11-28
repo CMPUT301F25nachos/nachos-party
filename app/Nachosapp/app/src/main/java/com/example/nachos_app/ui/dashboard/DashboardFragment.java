@@ -19,13 +19,20 @@ import com.example.nachos_app.EventAdapter;
 import com.example.nachos_app.databinding.FragmentDashboardBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment displaying the user's personalized dashboard of events.
+ * Shows events where the user is either:
+ * - The organizer
+ * - On the waitlist
+ * - Selected for participation
+ * - Enrolled
+ * - Cancelled
+ * Provides filtering capabilities and navigation to event details.
+ */
 public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
@@ -33,12 +40,7 @@ public class DashboardFragment extends Fragment {
     private RecyclerView recyclerView;
     private EventAdapter eventAdapter;
     private Button filterButton;
-
-    private FirebaseFirestore db;
     private String currentUserId;
-
-    private List<Event> allUserEvents = new ArrayList<>();
-    private List<String> allUserEventIds = new ArrayList<>();
     private String currentFilter = "All";
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -47,8 +49,6 @@ public class DashboardFragment extends Fragment {
 
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
-        db = FirebaseFirestore.getInstance();
 
         // Get current user
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -59,22 +59,81 @@ public class DashboardFragment extends Fragment {
         initViews(root);
         setupRecyclerView();
         setupFilterButton();
-        loadMyEvents();
+        observeViewModel();
+
+        // Load events through ViewModel
+        if (currentUserId != null) {
+            dashboardViewModel.loadMyEvents(currentUserId);
+        }
+
 
         return root;
     }
 
+    /**
+     * Observes LiveData from the ViewModel to update UI.
+     * Watches for loading state, events list, event IDs, and errors.
+     */
+    private void observeViewModel() {
+        // Observe loading state
+        dashboardViewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
+            if (binding == null) return;
+            // Optionally, handle loading indicator visibility here
+        });
+
+        // Observe events and eventIds to apply filter
+        dashboardViewModel.getEvents().observe(getViewLifecycleOwner(), events -> applyFilter(currentFilter));
+        dashboardViewModel.getEventIds().observe(getViewLifecycleOwner(), eventIds -> applyFilter(currentFilter));
+
+
+        // Observe errors
+        dashboardViewModel.getError().observe(getViewLifecycleOwner(), error -> {
+            if (binding == null || error == null) return;
+            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    /**
+     * Updates the RecyclerView with the given events and ids.
+     * Shows an empty state message if the list is empty.
+     */
+    private void updateRecyclerView(List<Event> events, List<String> ids) {
+        if (binding == null) return;
+
+        if (events == null || events.isEmpty()) {
+            binding.emptyStateTextView.setVisibility(View.VISIBLE);
+            binding.emptyStateTextView.setText("No events here.\nCreate/Join one to get started!");
+            binding.myEventsRecyclerView.setVisibility(View.GONE);
+        } else {
+            binding.emptyStateTextView.setVisibility(View.GONE);
+            binding.myEventsRecyclerView.setVisibility(View.VISIBLE);
+            eventAdapter.setEvents(events, ids);
+        }
+    }
+
+
+    /**
+     * Initializes view references from the binding.
+     * @param root The root view of the fragment
+     */
     private void initViews(View root) {
         recyclerView = binding.myEventsRecyclerView;
         filterButton = binding.filterButton;
     }
 
+    /**
+     * Sets up the RecyclerView with adapter and layout manager.
+     * Uses LinearLayoutManager for vertical scrolling list.
+     */
     private void setupRecyclerView() {
         eventAdapter = new EventAdapter(requireContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(eventAdapter);
     }
 
+    /**
+     * Sets up the filter button click listener to show a popup menu and apply the selected filter.
+     */
     private void setupFilterButton() {
         filterButton.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(requireContext(), filterButton);
@@ -94,75 +153,20 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    private void loadMyEvents() {
-        if (currentUserId == null) {
-            return;
-        }
 
-        db.collection("events")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<String> allEventIds = new ArrayList<>();
-                    List<Event> allEvents = new ArrayList<>();
-
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        allEventIds.add(doc.getId());
-                        allEvents.add(doc.toObject(Event.class));
-                    }
-
-                    filterUserEvents(allEventIds, allEvents);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(),
-                            "Failed to load events: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    private void filterUserEvents(List<String> allEventIds, List<Event> allEvents) {
-        final List<Event> userEvents = new ArrayList<>();
-        final List<String> userEventIds = new ArrayList<>();
-        final int totalEvents = allEventIds.size();
-        final int[] processedCount = {0};
-
-        if (totalEvents == 0) {
-            updateMasterListAndFilter(userEvents, userEventIds);
-            return;
-        }
-
-        for (int i = 0; i < allEventIds.size(); i++) {
-            final String eventId = allEventIds.get(i);
-            final Event event = allEvents.get(i);
-
-            // Check if user is organizer
-            if (event.getOrganizerId().equals(currentUserId)) {
-                userEvents.add(event);
-                userEventIds.add(eventId);
-
-                processedCount[0]++;
-                if (processedCount[0] == totalEvents) {
-                    updateMasterListAndFilter(userEvents, userEventIds);
-                }
-                continue;
-            }
-
-            // Check if user is participant (in any subcollection)
-            checkIfUserIsParticipant(eventId, event, userEvents, userEventIds, () -> {
-                processedCount[0]++;
-                if (processedCount[0] == totalEvents) {
-                    updateMasterListAndFilter(userEvents, userEventIds);
-                }
-            });
-        }
-    }
-
-    private void updateMasterListAndFilter(List<Event> events, List<String> ids) {
-        allUserEvents = new ArrayList<>(events);
-        allUserEventIds = new ArrayList<>(ids);
-        applyFilter(currentFilter);
-    }
-
+    /**
+     * Applies the selected filter to the list of user events and updates the RecyclerView.
+     * @param filter The filter string to apply.
+     */
     private void applyFilter(String filter) {
+        List<Event> allUserEvents = dashboardViewModel.getEvents().getValue();
+        List<String> allUserEventIds = dashboardViewModel.getEventIds().getValue();
+
+        if (allUserEvents == null || allUserEventIds == null) {
+            updateRecyclerView(new ArrayList<>(), new ArrayList<>());
+            return;
+        }
+
         List<Event> filteredEvents = new ArrayList<>();
         List<String> filteredIds = new ArrayList<>();
 
@@ -181,13 +185,13 @@ public class DashboardFragment extends Fragment {
                 case "Joined":
                     matches = !event.getOrganizerId().equals(currentUserId);
                     break;
-                case "Ongoing": // Registration Open
+                case "Ongoing": // Assuming Registration Open means Ongoing
                     matches = event.isRegistrationOpen();
                     break;
-                case "Past": // Registration Closed
+                case "Past": // Assuming Registration Closed and not upcoming means Past
                     matches = !event.isRegistrationOpen() && !event.isRegistrationUpcoming();
                     break;
-                case "Future": // Registration Upcoming
+                case "Future": // Assuming Registration Upcoming means Future
                     matches = event.isRegistrationUpcoming();
                     break;
             }
@@ -197,66 +201,9 @@ public class DashboardFragment extends Fragment {
                 filteredIds.add(id);
             }
         }
-        eventAdapter.setEvents(filteredEvents, filteredIds);
+        updateRecyclerView(filteredEvents, filteredIds);
     }
 
-    private void checkIfUserIsParticipant(String eventId, Event event,
-                                          List<Event> userEvents,
-                                          List<String> userEventIds,
-                                          Runnable onComplete) {
-        DocumentReference eventRef = db.collection("events").document(eventId);
-
-        // Check waitlist first (most common case)
-        eventRef.collection("waitlist").document(currentUserId)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot.exists()) {
-                        userEvents.add(event);
-                        userEventIds.add(eventId);
-                        onComplete.run();
-                        return;
-                    }
-
-                    // Not in waitlist, check selected
-                    eventRef.collection("selected").document(currentUserId)
-                            .get()
-                            .addOnSuccessListener(selectedSnapshot -> {
-                                if (selectedSnapshot.exists()) {
-                                    userEvents.add(event);
-                                    userEventIds.add(eventId);
-                                    onComplete.run();
-                                    return;
-                                }
-
-                                // Not in selected, check enrolled
-                                eventRef.collection("enrolled").document(currentUserId)
-                                        .get()
-                                        .addOnSuccessListener(enrolledSnapshot -> {
-                                            if (enrolledSnapshot.exists()) {
-                                                userEvents.add(event);
-                                                userEventIds.add(eventId);
-                                                onComplete.run();
-                                                return;
-                                            }
-
-                                            // Not in enrolled, check cancelled
-                                            eventRef.collection("cancelled").document(currentUserId)
-                                                    .get()
-                                                    .addOnSuccessListener(cancelledSnapshot -> {
-                                                        if (cancelledSnapshot.exists()) {
-                                                            userEvents.add(event);
-                                                            userEventIds.add(eventId);
-                                                        }
-                                                        onComplete.run();
-                                                    })
-                                                    .addOnFailureListener(e -> onComplete.run());
-                                        })
-                                        .addOnFailureListener(e -> onComplete.run());
-                            })
-                            .addOnFailureListener(e -> onComplete.run());
-                })
-                .addOnFailureListener(e -> onComplete.run());
-    }
 
     @Override
     public void onDestroyView() {

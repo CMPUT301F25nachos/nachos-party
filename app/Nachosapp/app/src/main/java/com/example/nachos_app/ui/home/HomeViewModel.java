@@ -12,6 +12,11 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ViewModel for the Home Fragment.
+ * Manages loading and filtering of available events.
+ * Shows only events with open registration (and not full) or upcoming registration.
+ */
 public class HomeViewModel extends ViewModel {
 
     private final MutableLiveData<List<Event>> mEvents;
@@ -44,6 +49,13 @@ public class HomeViewModel extends ViewModel {
         return mError;
     }
 
+    /**
+     * Loads all events from Firestore and filters them for display.
+     * Shows events with:
+     * - Open registration that are not full
+     * - Upcoming registration
+     * Orders results by creation date (newest first).
+     */
     public void loadEvents() {
         mLoading.setValue(true);
         mError.setValue(null);
@@ -59,12 +71,10 @@ public class HomeViewModel extends ViewModel {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Event event = document.toObject(Event.class);
 
-                        // Only show events with open registration
-                        if (event.isRegistrationOpen()) {
-                            if (!event.isWaitlistFull()) {
-                                openEvents.add(event);
-                                openIds.add(document.getId());
-                            }
+                        // Only show events with open registration and available spots
+                        if (event.isRegistrationOpen() && !event.isWaitlistFull()) {
+                            openEvents.add(event);
+                            openIds.add(document.getId());
                         } else if (event.isRegistrationUpcoming()) {
                             upcomingEvents.add(event);
                             upcomingIds.add(document.getId());

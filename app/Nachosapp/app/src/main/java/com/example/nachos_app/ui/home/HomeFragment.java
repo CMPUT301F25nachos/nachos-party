@@ -26,6 +26,14 @@ import com.journeyapps.barcodescanner.ScanOptions;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Main home screen fragment displaying available events.
+ * Shows events with open registration and provides options to:
+ * - Create new events
+ * - Filter events (upcoming feature)
+ * - Scan QR codes to view event details
+ * Automatically refreshes event list when fragment is resumed.
+ */
 public class HomeFragment extends Fragment {
 
     private static final String QR_PREFIX = "event://";
@@ -87,6 +95,10 @@ public class HomeFragment extends Fragment {
         homeViewModel.loadEvents();
     }
 
+    /**
+     * Observes ViewModel LiveData to update UI based on data changes.
+     * Handles loading states, event data updates, and error messages.
+     */
     private void observeViewModel() {
         // Observe loading state
         homeViewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
@@ -128,6 +140,11 @@ public class HomeFragment extends Fragment {
         });
     }
 
+    /**
+     * Updates the RecyclerView with events data.
+     * Shows empty state message if no events are available.
+     * Ensures events and IDs lists are synchronized before updating.
+     */
     private void updateEventsList() {
         if (binding == null) return;
         
@@ -186,6 +203,10 @@ public class HomeFragment extends Fragment {
                 }
             });
 
+    /**
+     * Launches the QR code scanner with appropriate configuration.
+     * Configures scanner to accept only QR codes and locks orientation.
+     */
     private void launchQrScanner() {
         ScanOptions options = new ScanOptions();
         options.setPrompt("Scan event QR code");
@@ -195,6 +216,12 @@ public class HomeFragment extends Fragment {
         qrScanLauncher.launch(options);
     }
 
+    /**
+     * Processes QR code scan results.
+     * Validates QR code format (must start with "event://") and extracts event ID.
+     * Opens EventDetailsActivity if valid, shows error toast otherwise.
+     * @param contents The scanned QR code content
+     */
     private void handleScanResult(String contents) {
         if (!contents.startsWith(QR_PREFIX)) {
             Toast.makeText(getContext(), "Invalid QR code", Toast.LENGTH_SHORT).show();
