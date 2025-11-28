@@ -1,5 +1,6 @@
 package com.example.nachos_app.ui.profile;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -8,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.nachos_app.EditProfileActivity;
 import com.example.nachos_app.R;
+import com.example.nachos_app.RegistrationActivity;
 import com.example.nachos_app.databinding.FragmentProfileBinding;
 import com.example.nachos_app.ui.admin.AdminAllowList;
 import com.example.nachos_app.ui.admin.AdminMenuActivity;
@@ -107,6 +110,10 @@ public class ProfileFragment extends Fragment {
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+
+        // Setup Delete Profile button
+        binding.btnDeleteProfile.setOnClickListener(v -> showDeleteConfirmationDialog());
+
         // set up the button
         binding.btnAdminSignIn.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), AdminMenuActivity.class)));
@@ -118,6 +125,30 @@ public class ProfileFragment extends Fragment {
         authListener = fa -> evaluateAdmin(fa.getCurrentUser());
 
         return root;
+    }
+
+    private void showDeleteConfirmationDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Profile")
+                .setMessage("Are you sure you want to delete your profile? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    profileViewModel.deleteProfile(new ProfileViewModel.OnDeleteProfileListener() {
+                        @Override
+                        public void onSuccess() {
+                            // Navigate to Registration/Login screen
+                            Intent intent = new Intent(getActivity(), RegistrationActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            Toast.makeText(getContext(), "Failed to delete profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     // these methods preserve the state of the admin button
@@ -205,4 +236,3 @@ public class ProfileFragment extends Fragment {
         });
     }
 }
-

@@ -92,4 +92,30 @@ public class ProfileViewModel extends ViewModel {
                     .update("notificationPreference", preference);
         }
     }
+
+    /**
+     * Deletes the user's profile from Firestore and deletes the user account from Firebase Authentication.
+     * @param listener Callback listener for success or failure.
+     */
+    public void deleteProfile(OnDeleteProfileListener listener) {
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+            // 1. Delete from Firestore
+            db.collection("users").document(userId).delete()
+                    .addOnSuccessListener(aVoid -> {
+                        // 2. Delete from Firebase Auth
+                        currentUser.delete()
+                                .addOnSuccessListener(aVoid1 -> listener.onSuccess())
+                                .addOnFailureListener(listener::onFailure);
+                    })
+                    .addOnFailureListener(listener::onFailure);
+        } else {
+            listener.onFailure(new Exception("No user logged in"));
+        }
+    }
+
+    public interface OnDeleteProfileListener {
+        void onSuccess();
+        void onFailure(Exception e);
+    }
 }

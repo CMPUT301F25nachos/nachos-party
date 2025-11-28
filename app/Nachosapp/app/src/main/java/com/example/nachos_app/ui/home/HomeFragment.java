@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,6 +23,7 @@ import com.example.nachos_app.databinding.FragmentHomeBinding;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,6 +40,10 @@ public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
     private EventAdapter eventAdapter;
     private HomeViewModel homeViewModel;
+
+    private List<Event> allEvents = new ArrayList<>();
+    private List<String> allEventIds = new ArrayList<>();
+    private String currentFilter = "All";
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -58,8 +64,17 @@ public class HomeFragment extends Fragment {
         });
 
         binding.filterButton.setOnClickListener(v -> {
-            // TODO: Implement filter functionality
-            Toast.makeText(getContext(), "Filter coming soon", Toast.LENGTH_SHORT).show();
+            PopupMenu popup = new PopupMenu(requireContext(), binding.filterButton);
+            popup.getMenu().add("All");
+            popup.getMenu().add("Ongoing");
+            popup.getMenu().add("Future");
+
+            popup.setOnMenuItemClickListener(item -> {
+                currentFilter = item.getTitle().toString();
+                applyFilter(currentFilter);
+                return true;
+            });
+            popup.show();
         });
 
         binding.scanQrButton.setOnClickListener(v -> launchQrScanner());
@@ -100,11 +115,17 @@ public class HomeFragment extends Fragment {
 
         // Observe events data
         homeViewModel.getEvents().observe(getViewLifecycleOwner(), events -> {
-            updateEventsList();
+            if (events != null) {
+                allEvents = new ArrayList<>(events);
+                updateEventsList();
+            }
         });
 
         homeViewModel.getEventIds().observe(getViewLifecycleOwner(), eventIds -> {
-            updateEventsList();
+            if (eventIds != null) {
+                allEventIds = new ArrayList<>(eventIds);
+                updateEventsList();
+            }
         });
 
         // Observe errors
@@ -126,20 +147,50 @@ public class HomeFragment extends Fragment {
      */
     private void updateEventsList() {
         if (binding == null) return;
+        
+        // Prevent IndexOutOfBoundsException if lists are not synced yet
+        if (allEvents.size() != allEventIds.size()) {
+            return;
+        }
+        
+        applyFilter(currentFilter);
+    }
 
-        List<Event> events = homeViewModel.getEvents().getValue();
-        List<String> eventIds = homeViewModel.getEventIds().getValue();
+    private void applyFilter(String filter) {
+        List<Event> filteredEvents = new ArrayList<>();
+        List<String> filteredIds = new ArrayList<>();
 
-        if (events != null && eventIds != null && events.size() == eventIds.size()) {
-            if (events.isEmpty()) {
-                binding.emptyStateTextView.setVisibility(View.VISIBLE);
-                binding.emptyStateTextView.setText("No events available.\nCreate one to get started!");
-                binding.eventsRecyclerView.setVisibility(View.GONE);
-            } else {
-                binding.emptyStateTextView.setVisibility(View.GONE);
-                binding.eventsRecyclerView.setVisibility(View.VISIBLE);
-                eventAdapter.setEvents(events, eventIds);
+        for (int i = 0; i < allEvents.size(); i++) {
+            Event event = allEvents.get(i);
+            String id = allEventIds.get(i);
+            boolean matches = false;
+
+            switch (filter) {
+                case "All":
+                    matches = true;
+                    break;
+                case "Ongoing": // Registration Open
+                    matches = event.isRegistrationOpen();
+                    break;
+                case "Future": // Registration Upcoming
+                    matches = event.isRegistrationUpcoming();
+                    break;
             }
+
+            if (matches) {
+                filteredEvents.add(event);
+                filteredIds.add(id);
+            }
+        }
+
+        if (filteredEvents.isEmpty()) {
+            binding.emptyStateTextView.setVisibility(View.VISIBLE);
+            binding.emptyStateTextView.setText("No events match your filter.");
+            binding.eventsRecyclerView.setVisibility(View.GONE);
+        } else {
+            binding.emptyStateTextView.setVisibility(View.GONE);
+            binding.eventsRecyclerView.setVisibility(View.VISIBLE);
+            eventAdapter.setEvents(filteredEvents, filteredIds);
         }
     }
 
