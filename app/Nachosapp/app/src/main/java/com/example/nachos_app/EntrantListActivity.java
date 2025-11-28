@@ -1,7 +1,12 @@
 package com.example.nachos_app;
 
+import static android.content.Intent.ACTION_CREATE_DOCUMENT;
+
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -9,17 +14,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Activity for displaying lists of entrants in different states.
@@ -32,11 +41,11 @@ public class EntrantListActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private String eventId;
     private String listType; // "waitlist", "selected", "enrolled", "cancelled"
+    private static final int CREATE_FILE_REQUEST_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_entrant_list);
 
         db = FirebaseFirestore.getInstance();
 
@@ -48,6 +57,20 @@ public class EntrantListActivity extends AppCompatActivity {
             Toast.makeText(this, "Invalid parameters", Toast.LENGTH_SHORT).show();
             finish();
             return;
+        }
+
+        // Choose a slightly different view for enrolled to display Export CSV button
+        if (listType.equals("enrolled")) setContentView(R.layout.activity_entrant_list_enrolled);
+        else setContentView(R.layout.activity_entrant_list);
+
+        // Export CSV button for enrolled entrants
+        if (listType.equals("enrolled")) {
+            findViewById(R.id.csv_button).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    createFile();
+                }
+            });
         }
 
         setupActionBar();
@@ -168,6 +191,85 @@ public class EntrantListActivity extends AppCompatActivity {
         });
 }
 
+    // Opens the system file dialogue to save a file
+    private void createFile() {
+        Intent intent = new Intent(ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/csv");
+        intent.putExtra(Intent.EXTRA_TITLE, "enrolled-entrants.csv");
+
+        startActivityForResult(intent, CREATE_FILE_REQUEST_CODE);
+    }
+
+    // Runs after createFile() file system dialogue activity completes, passes uri to exportCSV()
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        ArrayList<String> csvData = getCSVData();
+
+        if (requestCode == CREATE_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
+            Uri uri = data.getData();
+            String filePath = uri.getPath();
+            if (filePath != null) {
+                // We need to give Firebase operations from getCSVData() some time to finish, so delay calling exportCSV()
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        Toast.makeText(this, "Failed to export CSV", Toast.LENGTH_SHORT).show();
+                    }
+                    exportCSV(uri, csvData);
+                }).start();
+            } else Toast.makeText(this, "Failed to export CSV", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Pulls data from Firestore to write to be used with exportCSV()
+    private ArrayList<String> getCSVData() {
+        ArrayList<String> csvData = new ArrayList<>();
+        String csvHeader = "uid,timestamp\n";
+
+        db.collection("events")
+                .document(eventId)
+                .collection(listType)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    csvData.add(csvHeader);
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        String uid = doc.getId();
+                        String timestamp = doc.get("enrolledAt").toString();
+                        String data = uid + "," + timestamp + "\n";
+
+                        csvData.add(data);
+                    }
+                });
+        return csvData;
+    }
+
+    /**
+     * US 02.06.05
+     * Exports user data on the enrolled list in the form of UID and timestamp CSV to an an existing file (created by createFile())
+     * @param uri The path to a new, empty CSV file
+     * @param csvData Data to write to CSV file, with each entry of the array being one line
+     */
+    private void exportCSV(Uri uri, ArrayList<String> csvData) {
+        try {
+            OutputStream outputStream = getContentResolver().openOutputStream(uri);
+            if (outputStream != null) {
+                try {
+                    for(int i = 0; i < csvData.size(); i++) {
+                        outputStream.write(csvData.get(i).getBytes());
+                    }
+                    outputStream.flush();
+                    outputStream.close();
+                } catch (IOException e) {
+                    Toast.makeText(this, "Failed to export CSV", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch(FileNotFoundException e) {
+            Toast.makeText(this, "Failed to export CSV", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
