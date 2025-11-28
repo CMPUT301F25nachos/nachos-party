@@ -296,7 +296,7 @@ public class CreateEventActivity extends AppCompatActivity {
     /**
      * Processes the selected banner image by resizing and compressing it.
      * Limits image size to prevent Firestore document size issues (1MB limit).
-     * Max width: 600px, JPEG quality: 70%, Max size: 500KB
+     * Max width: 800px, max height: 600px, JPEG quality: 70%, Max size: 500KB
      * @param eventId ID of the event being created
      * @param eventName name of the event
      * @param description event description
@@ -312,10 +312,19 @@ public class CreateEventActivity extends AppCompatActivity {
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedBannerUri);
 
-                // Resize bitmap to reduce size (max width 600px for smaller file)
-                int maxWidth = 600;
-                int maxHeight = (int) (bitmap.getHeight() * (maxWidth / (double) bitmap.getWidth()));
-                Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
+                // Calculate new dimensions maintaining aspect ratio
+                int maxWidth = 800;
+                int maxHeight = 600;
+
+                float ratio = Math.min(
+                        (float) maxWidth / bitmap.getWidth(),
+                        (float) maxHeight / bitmap.getHeight()
+                );
+
+                int newWidth = Math.round(bitmap.getWidth() * ratio);
+                int newHeight = Math.round(bitmap.getHeight() * ratio);
+
+                Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
 
                 // Convert to base64
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
