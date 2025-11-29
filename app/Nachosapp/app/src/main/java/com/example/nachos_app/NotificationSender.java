@@ -143,7 +143,7 @@ public class NotificationSender {
                         notif.put("eventId", eventId);
                         notif.put("sendTime", new Date());
                         notif.put("type", type);
-                        notif.put("message", message);
+                        notif.put("message", eventName + ": " + message);
 
                         db.collection("users").document(uid).collection("notifications").add(notif);
                     }
