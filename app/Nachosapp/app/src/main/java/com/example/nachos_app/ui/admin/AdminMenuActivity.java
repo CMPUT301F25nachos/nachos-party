@@ -4,7 +4,7 @@ package com.example.nachos_app.ui.admin;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Toast;
+
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -51,7 +51,7 @@ public class AdminMenuActivity extends AppCompatActivity {
 
         // go to all logs
         findViewById(R.id.btn_view_logs).setOnClickListener(v ->
-                Toast.makeText(this, "Logs view coming soon", Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, AdminLogsActivity.class)));
 
         // return to previous screen
         findViewById(R.id.btn_exit_admin).setOnClickListener(v -> finish());

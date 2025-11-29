@@ -34,7 +34,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 public class AdminImagesTest {
 
     /**
-     * Launches the admin menu activity for the test below
+     * Launches the admin menu activity
      */
     @Rule
     public ActivityScenarioRule<AdminMenuActivity> adminMenuRule =

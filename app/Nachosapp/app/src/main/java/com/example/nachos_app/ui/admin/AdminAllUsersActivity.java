@@ -3,6 +3,7 @@ package com.example.nachos_app.ui.admin;
 
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -26,7 +27,6 @@ import java.util.List;
  * Reads from the users collection and binds the related fields
  * </p>
  *
- * @author Darius
  */
 
 public class AdminAllUsersActivity extends AppCompatActivity {
@@ -47,6 +47,12 @@ public class AdminAllUsersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_all_users);
         if (getSupportActionBar() != null) getSupportActionBar().hide();
+
+        // wire up back button
+        View back = findViewById(R.id.btn_back);
+        if (back != null){
+            back.setOnClickListener(v -> finish());
+        }
 
         // set up views/adapter
         rv = findViewById(R.id.rv_users);
@@ -91,7 +97,7 @@ public class AdminAllUsersActivity extends AppCompatActivity {
      * Show confirmation dialog before removing a user.
      */
     private void showRemoveUserDialog(UserAdminAdapter.UserRow row, int position) {
-        if (row == null || row.id == null) return;
+        if (row == null) return;
 
         String name = (row.name != null && !row.name.trim().isEmpty())
                 ? row.name

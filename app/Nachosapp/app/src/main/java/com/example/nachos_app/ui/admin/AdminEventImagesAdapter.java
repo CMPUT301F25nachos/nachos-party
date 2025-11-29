@@ -39,6 +39,13 @@ public class AdminEventImagesAdapter extends RecyclerView.Adapter<AdminEventImag
      * </p>
      */
     public interface OnImageClickListener {
+        /**
+         * Called when a row in the images list is clicked.
+         *
+         * @param row      the Row object that was clicked
+         * @param position adapter position of that row
+         */
+
         void onImageClicked(Row row, int position);
     }
 
@@ -76,6 +83,14 @@ public class AdminEventImagesAdapter extends RecyclerView.Adapter<AdminEventImag
         notifyItemRemoved(position);
     }
 
+
+    /**
+     * ViewHolder for the event images list.
+     * <p>
+     *     Holds references to the image view for the banner image
+     *     and text view for the event name
+     * </p>
+     */
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -84,22 +99,32 @@ public class AdminEventImagesAdapter extends RecyclerView.Adapter<AdminEventImag
         return new VH(view);
     }
 
+    /**
+     * Binds the row data to the views for the given adapter position
+     *
+     * @param holder   the ViewHolder for the row
+     * @param position adapter position of the row
+     */
+
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
         Row row = data.get(position);
 
+        // set the event name
         holder.title.setText(
                 row.eventName != null && !row.eventName.trim().isEmpty()
                         ? row.eventName
                         : "(untitled event)"
         );
 
+        // load the image
         ImageUtils.loadBase64Image(
                 holder.bannerImage,
                 row.bannerBase64,
                 R.drawable.ic_camera_placeholder
         );
 
+        // set click listener
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 int adapterPos = holder.getAdapterPosition();

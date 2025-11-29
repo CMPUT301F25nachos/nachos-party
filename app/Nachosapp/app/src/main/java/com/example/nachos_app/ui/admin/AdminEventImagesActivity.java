@@ -1,6 +1,7 @@
 package com.example.nachos_app.ui.admin;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -41,9 +42,17 @@ public class AdminEventImagesActivity extends AppCompatActivity {
         // hide the action bar
         if (getSupportActionBar() != null) getSupportActionBar().hide();
 
+        // back button
+        View back = findViewById(R.id.btn_back);
+        if (back != null) {
+            back.setOnClickListener(v -> finish());
+        }
+
+
+
         db = FirebaseFirestore.getInstance();
 
-        // set up the view and then displays the images
+        // set up the view
         RecyclerView rv = findViewById(R.id.rv_event_images);
         rv.setLayoutManager(new GridLayoutManager(this, 2));
 

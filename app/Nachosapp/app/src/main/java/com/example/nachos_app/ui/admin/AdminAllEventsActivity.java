@@ -3,6 +3,7 @@ package com.example.nachos_app.ui.admin;
 
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -28,8 +29,6 @@ import java.util.List;
  * recyclerView
  * Computes the event status from the start and end timestamps
  * </p>
- *
- * @author Darius
  */
 public class AdminAllEventsActivity extends AppCompatActivity {
     private EventAdminAdapter adapter;
@@ -48,6 +47,12 @@ public class AdminAllEventsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_all_events);
         if (getSupportActionBar() != null) getSupportActionBar().hide();
+
+        View back = findViewById(R.id.btn_back);
+
+        if (back != null){
+            back.setOnClickListener(v -> finish());
+        }
 
         // set up views
         RecyclerView rv = findViewById(R.id.rv_events);
@@ -107,7 +112,7 @@ public class AdminAllEventsActivity extends AppCompatActivity {
      * Show confirmation dialog before removing an event.
      */
     private void showRemoveEventDialog(EventAdminAdapter.Row row, int position) {
-        if (row == null || row.id == null) return;
+        if (row == null) return;
         // get the event name
         String eventName = (row.name != null && !row.name.trim().isEmpty()) ? row.name : "(untitled event)";
 

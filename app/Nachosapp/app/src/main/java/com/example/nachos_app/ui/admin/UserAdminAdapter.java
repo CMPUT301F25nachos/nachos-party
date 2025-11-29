@@ -23,10 +23,8 @@ import java.util.List;
  * RecyclerView adapter for the all user admin list
  * <p>
  * Binds row with name, email and created at timestamp
- * Will be implementing further at a later date
  * </p>
  *
- * @author Darius
  */
 public class UserAdminAdapter extends RecyclerView.Adapter<UserAdminAdapter.VH> {
 

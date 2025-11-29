@@ -50,6 +50,7 @@ public class EventAdminAdapter extends RecyclerView.Adapter<EventAdminAdapter.VH
      * @param listener callback invoked when a row is clicked (may be null)
      */
     public EventAdminAdapter(OnEventClickListener listener) {
+
         this.listener = listener;
     }
 

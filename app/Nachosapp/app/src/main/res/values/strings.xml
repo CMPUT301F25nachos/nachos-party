@@ -41,5 +41,8 @@
     <string name="admin_remove_user_cancel">Cancel</string>
     <string name="admin_remove_user_success">User and events removed</string>
     <string name="admin_remove_user_fail">Failed to remove user</string>
+    <string name="admin_title_logs">Notification Logs</string>
+    <string name="admin_logs_empty">No notifications have been sent yet.</string>
+    <string name="admin_logs_load_fail">Failed to load notification logs</string>
 
 </resources>
