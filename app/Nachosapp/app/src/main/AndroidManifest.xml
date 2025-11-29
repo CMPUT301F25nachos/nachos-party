@@ -45,6 +45,7 @@
         <activity android:name="com.example.nachos_app.ui.admin.AdminMenuActivity" />
         <activity android:name="com.example.nachos_app.ui.admin.AdminAllUsersActivity" />
         <activity android:name="com.example.nachos_app.ui.admin.AdminAllEventsActivity" />
+        <activity android:name="com.example.nachos_app.ui.admin.AdminEventImagesActivity" />
 
 
 

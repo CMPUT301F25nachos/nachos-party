@@ -5,6 +5,7 @@ package com.example.nachos_app.ui.admin;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -53,7 +54,8 @@ public class AdminAllEventsActivity extends AppCompatActivity {
         rv.setLayoutManager(new LinearLayoutManager(this));
 
         // wire adapter
-        adapter = new EventAdminAdapter();
+        adapter = new EventAdminAdapter((row, position) ->
+                showRemoveEventDialog(row, position));
         rv.setAdapter(adapter);
 
         // load data
@@ -101,4 +103,45 @@ public class AdminAllEventsActivity extends AppCompatActivity {
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
+    /**
+     * Show confirmation dialog before removing an event.
+     */
+    private void showRemoveEventDialog(EventAdminAdapter.Row row, int position) {
+        if (row == null || row.id == null) return;
+        // get the event name
+        String eventName = (row.name != null && !row.name.trim().isEmpty()) ? row.name : "(untitled event)";
+
+        // build the dialog
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.admin_remove_event_title)
+                .setMessage(getString(R.string.admin_remove_event_message, eventName))
+                .setPositiveButton(R.string.admin_remove_event_confirm,
+                        (dialog, which) -> removeEvent(row, position))
+                .setNegativeButton(R.string.admin_remove_event_cancel, null)
+                .show();
+    }
+
+    /**
+     * Remove event document from Firestore and from the adapter.
+     */
+    private void removeEvent(EventAdminAdapter.Row row, int position) {
+        if (row == null || row.id == null) return;
+
+        // find and remove the event from firebase
+        db.collection("events")
+                .document(row.id)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    adapter.removeAt(position);
+                    Toast.makeText(this,
+                            getString(R.string.admin_remove_event_success),
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this,
+                                getString(R.string.admin_remove_event_fail) + ": " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show());
+    }
+
+
 }
