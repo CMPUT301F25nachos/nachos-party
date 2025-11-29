@@ -5,8 +5,10 @@ import static android.content.Intent.ACTION_CREATE_DOCUMENT;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -42,6 +44,8 @@ public class EntrantListActivity extends AppCompatActivity {
     private String eventId;
     private String listType; // "waitlist", "selected", "enrolled", "cancelled"
     private static final int CREATE_FILE_REQUEST_CODE = 1;
+    private EditText notificationEditText;
+    //private NotificationSender
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +73,26 @@ public class EntrantListActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     createFile();
+                }
+            });
+        }
+        // Setup notification sending UI for other list types
+        else {
+            // Text box
+            notificationEditText = findViewById(R.id.notificationEditText);
+
+            // Send button
+            findViewById(R.id.send_notification_button).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    String notificationText = notificationEditText.getText().toString().trim();
+                    Log.i("Notifications", "Notification send button clicked");
+
+                    if (notificationText.isEmpty()) {
+                        notificationEditText.setError("Notification text is required");
+                        notificationEditText.requestFocus();
+                    }
+                    Log.i("Notifications", "Notification Text: " + notificationText);
                 }
             });
         }
@@ -151,7 +175,6 @@ public class EntrantListActivity extends AppCompatActivity {
 
                         userDataList.add(data);
                     }
-
                     fetchUserProfiles(userIds, userDataList);
                 })
                 .addOnFailureListener(e -> {
