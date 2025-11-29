@@ -2,16 +2,12 @@ package com.example.nachos_app;
 
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-
-// US 02.05.01 - As an organizer I want to send a notification to chosen entrants to sign up for events
 
 /**
  * NotificationSender responsible for sending win and loss notifications after the lottery
@@ -29,58 +25,66 @@ public class NotificationSender {
      * @param eventName Name of event that corresponds with eventId
      * @param db The connection to the firebase database
      */
-    NotificationSender(String eventId, String eventName, FirebaseFirestore db) {
+    public NotificationSender(String eventId, String eventName, FirebaseFirestore db) {
         this.db = db;
         this.eventId = eventId;
         this.eventName = eventName;
     }
 
     /**
-     * Writes win/loss notifications to winners/the rest of the entrants respectively
+     * Writes win/loss notifications to winners/the rest of the entrants respectively.
+     * Checks user's notification preferences before sending.
      * @param winners List of documents containing UIDs of selected winners
      * @param waitlist List of documents containing UIDs of waiting list
      */
     public void sendSelectionNotifications(List<DocumentSnapshot> winners, List<DocumentSnapshot> waitlist) {
-        WriteBatch batch = db.batch();
-        ArrayList<String> losers;
-        
+        ArrayList<String> winnerUids = new ArrayList<>();
         for (DocumentSnapshot doc : winners) {
             String uid = doc.getString("uid");
-
-            // Package notification
-            Map<String, Object> winnerNotif = new HashMap<>();
-            winnerNotif.put("uid", uid);
-            winnerNotif.put("eventId", eventId);
-            winnerNotif.put("sendTime", new Date());
-            winnerNotif.put("type", "lotteryWon");
-            winnerNotif.put("message", "You have been selected for " + eventName + ". Tap to confirm or decline your spot.");
-
-            // Write winning data to db
-            batch.set(db.collection("users")
-                        .document(uid)
-                        .collection("notifications")
-                        .document(), winnerNotif);
+            if (uid != null) winnerUids.add(uid);
         }
-
-        // Get list of all entrants, subtract winners to get losers
-        losers = generateLosers(winners, waitlist);
-
-        for (String uid : losers) {
-            // Package notification
-            Map<String, Object> loserNotif = new HashMap<>();
-            loserNotif.put("uid", uid);
-            loserNotif.put("eventId", eventId);
-            loserNotif.put("sendTime", new Date());
-            loserNotif.put("type", "lotteryLost");
-            loserNotif.put("message", "You were not selected for " + eventName + ".");
-
-            // Write winning data to db
-            batch.set(db.collection("users")
-                    .document(uid)
-                    .collection("notifications")
-                    .document(), loserNotif);
+        
+        ArrayList<String> loserUids = generateLosers(winners, waitlist);
+        
+        // Process Winners
+        for (String uid : winnerUids) {
+            db.collection("users").document(uid).get().addOnSuccessListener(userSnap -> {
+                if (userSnap.exists()) {
+                    String pref = userSnap.getString("notificationPreference");
+                    // Default to "yes" if missing
+                    if (pref == null || "yes".equalsIgnoreCase(pref)) {
+                        Map<String, Object> notif = new HashMap<>();
+                        notif.put("uid", uid);
+                        notif.put("eventId", eventId);
+                        notif.put("sendTime", new Date());
+                        notif.put("type", "lotteryWon");
+                        notif.put("message", "You have been selected for " + eventName + ". Tap to confirm or decline your spot.");
+                        
+                        db.collection("users").document(uid).collection("notifications").add(notif);
+                    }
+                }
+            });
         }
-        batch.commit();
+        
+        // Process Losers
+        for (String uid : loserUids) {
+            db.collection("users").document(uid).get().addOnSuccessListener(userSnap -> {
+                if (userSnap.exists()) {
+                    String pref = userSnap.getString("notificationPreference");
+                    // Default to "yes" if missing
+                    if (pref == null || "yes".equalsIgnoreCase(pref)) {
+                        Map<String, Object> notif = new HashMap<>();
+                        notif.put("uid", uid);
+                        notif.put("eventId", eventId);
+                        notif.put("sendTime", new Date());
+                        notif.put("type", "lotteryLost");
+                        notif.put("message", "You were not selected for " + eventName + ".");
+                        
+                        db.collection("users").document(uid).collection("notifications").add(notif);
+                    }
+                }
+            });
+        }
     }
 
     // Get list of all entrants, subtract winners to get losers
@@ -90,12 +94,12 @@ public class NotificationSender {
 
         for (DocumentSnapshot doc : waitlist) {
             String uid = doc.getString("uid");
-            listWaiting.add(uid);
+            if (uid != null) listWaiting.add(uid);
         }
 
         for (DocumentSnapshot doc : winners) {
             String uid = doc.getString("uid");
-            listWinners.add(uid);
+            if (uid != null) listWinners.add(uid);
         }
 
         listWaiting.removeAll(listWinners);

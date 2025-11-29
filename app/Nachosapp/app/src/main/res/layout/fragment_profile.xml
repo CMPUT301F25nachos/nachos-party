@@ -65,14 +65,23 @@
             android:padding="8dp"
             android:entries="@array/notification_options" />
 
+        <Button
+            android:id="@+id/btn_delete_profile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:backgroundTint="@android:color/holo_red_light"
+            android:text="Delete Profile"
+            android:textColor="@android:color/white" />
+
     </LinearLayout>
 
     <ImageButton
         android:id="@+id/settingsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:layout_marginEnd="10dp"
+        android:layout_marginTop="84dp"
+        android:layout_marginEnd="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Edit Profile"
         android:src="@drawable/ic_profile_settings"
