@@ -43,9 +43,10 @@ public class EntrantListActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private String eventId;
     private String listType; // "waitlist", "selected", "enrolled", "cancelled"
+    private String eventName;
     private static final int CREATE_FILE_REQUEST_CODE = 1;
     private EditText notificationEditText;
-    //private NotificationSender
+    private NotificationSender notifSender;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +57,16 @@ public class EntrantListActivity extends AppCompatActivity {
         // Get parameters from intent
         eventId = getIntent().getStringExtra("eventId");
         listType = getIntent().getStringExtra("listType");
+        eventName = getIntent().getStringExtra("eventName");
+
+        // Setup notification sender
+        if (notifSender == null) {
+            notifSender = new NotificationSender(eventId, eventName, db);
+            notifSender.setType(listType);
+        } else {
+            notifSender.setEventName(eventName);
+            notifSender.setType(listType);
+        }
 
         if (eventId == null || listType == null) {
             Toast.makeText(this, "Invalid parameters", Toast.LENGTH_SHORT).show();
@@ -86,13 +97,12 @@ public class EntrantListActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     String notificationText = notificationEditText.getText().toString().trim();
-                    Log.i("Notifications", "Notification send button clicked");
+                    notifSender.sendListNotifications(notificationText);
 
                     if (notificationText.isEmpty()) {
                         notificationEditText.setError("Notification text is required");
                         notificationEditText.requestFocus();
                     }
-                    Log.i("Notifications", "Notification Text: " + notificationText);
                 }
             });
         }
@@ -175,6 +185,7 @@ public class EntrantListActivity extends AppCompatActivity {
 
                         userDataList.add(data);
                     }
+                    notifSender.setUserIds(userIds);
                     fetchUserProfiles(userIds, userDataList);
                 })
                 .addOnFailureListener(e -> {
@@ -184,34 +195,34 @@ public class EntrantListActivity extends AppCompatActivity {
     }
 
     private void fetchUserProfiles(List<String> userIds, List<Map<String, Object>> userDataList) {
-    if (userIds.isEmpty()) {
-        adapter.setUsers(userIds, userDataList);
-        Toast.makeText(this, "No entrants in this list", Toast.LENGTH_SHORT).show();
-        return;
-    }
-
-    List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
-    for (String uid : userIds) {
-        tasks.add(db.collection("users").document(uid).get());
-    }
-
-    Tasks.whenAllSuccess(tasks)
-        .addOnSuccessListener(results -> {
-            for (int i = 0; i < results.size(); i++) {
-                DocumentSnapshot snapshot = (DocumentSnapshot) results.get(i);
-                String name = snapshot.getString("name");
-                if (name != null && !name.trim().isEmpty()) {
-                    userDataList.get(i).put("name", name.trim());
-                } 
-                // Else fallback is already ID-based from userDataList
-            }
-
+        if (userIds.isEmpty()) {
             adapter.setUsers(userIds, userDataList);
-        })
-        .addOnFailureListener(e -> {
-            // Worst case: fallback to IDs
-            adapter.setUsers(userIds, userDataList);
-        });
+            Toast.makeText(this, "No entrants in this list", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
+        for (String uid : userIds) {
+            tasks.add(db.collection("users").document(uid).get());
+        }
+
+        Tasks.whenAllSuccess(tasks)
+            .addOnSuccessListener(results -> {
+                for (int i = 0; i < results.size(); i++) {
+                    DocumentSnapshot snapshot = (DocumentSnapshot) results.get(i);
+                    String name = snapshot.getString("name");
+                    if (name != null && !name.trim().isEmpty()) {
+                        userDataList.get(i).put("name", name.trim());
+                    }
+                    // Else fallback is already ID-based from userDataList
+                }
+
+                adapter.setUsers(userIds, userDataList);
+            })
+            .addOnFailureListener(e -> {
+                // Worst case: fallback to IDs
+                adapter.setUsers(userIds, userDataList);
+            });
 }
 
     // Opens the system file dialogue to save a file
