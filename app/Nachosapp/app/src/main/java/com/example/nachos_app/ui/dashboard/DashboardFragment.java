@@ -210,4 +210,13 @@ public class DashboardFragment extends Fragment {
         super.onDestroyView();
         binding = null;
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Reload events when returning to this fragment to reflect any updates
+        if (currentUserId != null) {
+            dashboardViewModel.loadMyEvents(currentUserId);
+        }
+    }
 }
