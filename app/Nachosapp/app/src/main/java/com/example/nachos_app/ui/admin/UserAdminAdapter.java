@@ -23,10 +23,8 @@ import java.util.List;
  * RecyclerView adapter for the all user admin list
  * <p>
  * Binds row with name, email and created at timestamp
- * Will be implementing further at a later date
  * </p>
  *
- * @author Darius
  */
 public class UserAdminAdapter extends RecyclerView.Adapter<UserAdminAdapter.VH> {
 
@@ -38,7 +36,21 @@ public class UserAdminAdapter extends RecyclerView.Adapter<UserAdminAdapter.VH> 
         public Timestamp createdAt;
     }
 
+    public interface OnUserClickListener {
+        void onUserClicked(UserRow row, int position);
+    }
+
     private final List<UserRow> data = new ArrayList<>();
+    private final OnUserClickListener listener;
+
+    /**
+     * Creates a new adapter for the admin users list.
+     *
+     * @param listener callback invoked when a row is clicked (may be null)
+     */
+    public UserAdminAdapter(OnUserClickListener listener) {
+        this.listener = listener;
+    }
 
     /**
      * Replaces the list contents and refreshes the view
@@ -50,6 +62,13 @@ public class UserAdminAdapter extends RecyclerView.Adapter<UserAdminAdapter.VH> 
         data.clear();
         data.addAll(rows);
         notifyDataSetChanged();
+    }
+
+    /** Removes a row at the given adapter position (if valid). */
+    public void removeAt(int position) {
+        if (position < 0 || position >= data.size()) return;
+        data.remove(position);
+        notifyItemRemoved(position);
     }
 
 
@@ -104,6 +123,14 @@ public class UserAdminAdapter extends RecyclerView.Adapter<UserAdminAdapter.VH> 
                 ? DateFormat.getDateTimeInstance().format(r.createdAt.toDate())
                 : "";
         h.created.setText(createdStr);
+
+        h.itemView.setOnClickListener(v -> {
+            if (listener != null){
+            int adapterPos = h.getAdapterPosition();
+            if (adapterPos != RecyclerView.NO_POSITION){
+                listener.onUserClicked(data.get(adapterPos), adapterPos);
+            }
+        }});
     }
 
 

@@ -3,8 +3,10 @@ package com.example.nachos_app.ui.admin;
 
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,10 +25,8 @@ import java.util.List;
  * Admin screen displaying all user profiles from Firestore
  * <p>
  * Reads from the users collection and binds the related fields
- * Will be implementing more features later
  * </p>
  *
- * @author Darius
  */
 
 public class AdminAllUsersActivity extends AppCompatActivity {
@@ -48,10 +48,17 @@ public class AdminAllUsersActivity extends AppCompatActivity {
         setContentView(R.layout.activity_admin_all_users);
         if (getSupportActionBar() != null) getSupportActionBar().hide();
 
+        // wire up back button
+        View back = findViewById(R.id.btn_back);
+        if (back != null){
+            back.setOnClickListener(v -> finish());
+        }
+
         // set up views/adapter
         rv = findViewById(R.id.rv_users);
         rv.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new UserAdminAdapter();
+        adapter = new UserAdminAdapter((row, position) ->
+                showRemoveUserDialog(row, position));
         rv.setAdapter(adapter);
 
         // load the user data
@@ -85,4 +92,71 @@ public class AdminAllUsersActivity extends AppCompatActivity {
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load users: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
+
+    /**
+     * Show confirmation dialog before removing a user.
+     */
+    private void showRemoveUserDialog(UserAdminAdapter.UserRow row, int position) {
+        if (row == null) return;
+
+        String name = (row.name != null && !row.name.trim().isEmpty())
+                ? row.name
+                : "(no name)";
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.admin_remove_user_title)
+                .setMessage(getString(R.string.admin_remove_user_message, name))
+                .setPositiveButton(R.string.admin_remove_user_confirm,
+                        (dialog, which) -> removeUser(row, position))
+                .setNegativeButton(R.string.admin_remove_user_cancel, null)
+                .show();
+    }
+
+    /**
+     * Remove user and all events they may have created
+     */
+    private void removeUser(UserAdminAdapter.UserRow row, int position) {
+        if (row == null || row.id == null) return;
+
+        // find events created by user
+        db.collection("events")
+                .whereEqualTo("organizerId", row.id)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+
+                    // delete those events
+                    db.runBatch(batch -> {
+                        for (DocumentSnapshot doc : querySnapshot) {
+                            batch.delete(doc.getReference());
+                        }
+                    }).addOnSuccessListener(unusedBatch -> {
+
+                        // delete the user
+                        db.collection("users")
+                                .document(row.id)
+                                .delete()
+                                .addOnSuccessListener(unusedUser -> {
+                                    // Remove from adapter so it disappears from the list
+                                    adapter.removeAt(position);
+                                    Toast.makeText(this,
+                                            getString(R.string.admin_remove_user_success),
+                                            Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(this,
+                                                getString(R.string.admin_remove_user_fail) + ": " + e.getMessage(),
+                                                Toast.LENGTH_SHORT).show());
+
+                    }).addOnFailureListener(e ->
+                            Toast.makeText(this,
+                                    getString(R.string.admin_remove_user_fail) + ": " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show());
+
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this,
+                                getString(R.string.admin_remove_user_fail) + ": " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show());
+    }
+
 }

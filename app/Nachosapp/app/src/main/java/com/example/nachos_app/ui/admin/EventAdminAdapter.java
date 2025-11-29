@@ -22,8 +22,6 @@ import java.util.List;
  * <p>
  * Displays event name, date ranges and status
  * </p>
- *
- * @author Darius
  */
 public class EventAdminAdapter extends RecyclerView.Adapter<EventAdminAdapter.VH> {
 
@@ -36,8 +34,37 @@ public class EventAdminAdapter extends RecyclerView.Adapter<EventAdminAdapter.VH
         public boolean registrationUpcoming;
     }
 
+    /**
+     * Callback interface so the activity can react to row clicks
+     * */
+    public interface OnEventClickListener{
+        void onEventClicked(Row row, int position);
+    }
+
     private final List<Row> data = new ArrayList<>();
-    public void set(List<Row> rows) { data.clear(); data.addAll(rows); notifyDataSetChanged(); }
+    private final OnEventClickListener listener;
+
+    /**
+     * Creates a new adapter for the admin events list.
+     *
+     * @param listener callback invoked when a row is clicked (may be null)
+     */
+    public EventAdminAdapter(OnEventClickListener listener) {
+
+        this.listener = listener;
+    }
+
+    public void set(List<Row> rows) {
+        data.clear();
+        data.addAll(rows);
+        notifyDataSetChanged(); }
+
+
+    public void  removeAt(int position){
+        if (position < 0 || position >= data.size()) return;
+        data.remove(position);
+        notifyItemRemoved(position);
+    }
 
 
     /**
@@ -89,6 +116,16 @@ public class EventAdminAdapter extends RecyclerView.Adapter<EventAdminAdapter.VH
         h.range.setText(r.dateTimeRange != null ? r.dateTimeRange : "");
         String s = r.registrationOpen ? "Open" : (r.registrationUpcoming ? "Upcoming" : "Closed");
         h.status.setText(s);
+
+        // allow the rows to be clickable
+        h.itemView.setOnClickListener(v-> {
+            if (listener != null){
+                int adapterPos = h.getAdapterPosition();
+                if (adapterPos != RecyclerView.NO_POSITION){
+                    listener.onEventClicked(data.get(adapterPos), adapterPos);
+                }
+            }
+        });
     }
 
 
