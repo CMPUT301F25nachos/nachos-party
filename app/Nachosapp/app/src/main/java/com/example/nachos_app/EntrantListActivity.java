@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -26,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -243,9 +245,10 @@ public class EntrantListActivity extends AppCompatActivity {
                     csvData.add(csvHeader);
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         String uid = doc.getId();
-                        String timestamp = doc.get("enrolledAt").toString();
-                        String data = uid + "," + timestamp + "\n";
+                        Timestamp timestamp = (Timestamp) doc.get("enrolledAt");
+                        Date formattedTimestamp = timestamp.toDate();
 
+                        String data = uid + "," + formattedTimestamp + "\n";
                         csvData.add(data);
                     }
                 });
