@@ -15,16 +15,18 @@ import org.junit.runner.RunWith;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 /**
- * This class tests the full user profile flow, from registration to editing. It ensures that the app
- * correctly handles user creation, displays the data, and updates it.
+ * This class tests the full user profile flow, from registration to editing and deletion. It ensures that the app
+ * correctly handles user creation, displays the data, updates it, and deletes the user.
  */
 @RunWith(AndroidJUnit4.class)
 public class ProfileAndEditActivityTest {
@@ -106,5 +108,34 @@ public class ProfileAndEditActivityTest {
         // 5. Verify the updated data is displayed on the profile screen.
         onView(withId(R.id.nameTextView)).check(matches(withText("Test User Updated")));
         onView(withId(R.id.emailTextView)).check(matches(withText("test_updated@example.com")));
+    }
+    
+    /**
+     * Tests the profile deletion flow.
+     */
+    @Test
+    public void testProfileDeletion() {
+        // 1. Register a new user.
+        onView(withId(R.id.nameEditText)).perform(typeText("Delete Me"));
+        onView(withId(R.id.emailEditText)).perform(typeText("delete@example.com"));
+        onView(withId(R.id.registerButton)).perform(click());
+
+        try { Thread.sleep(2000); } catch (InterruptedException e) { e.printStackTrace(); }
+
+        // 2. Navigate to profile.
+        onView(withId(R.id.navigation_profile)).perform(click());
+
+        try { Thread.sleep(2000); } catch (InterruptedException e) { e.printStackTrace(); }
+
+        // 3. Click delete button.
+        onView(withId(R.id.btn_delete_profile)).perform(scrollTo(), click());
+
+        // 4. Confirm deletion.
+        onView(withText("Delete")).perform(click());
+
+        try { Thread.sleep(2000); } catch (InterruptedException e) { e.printStackTrace(); }
+
+        // 5. Verify returned to RegistrationActivity.
+        intended(hasComponent(RegistrationActivity.class.getName()));
     }
 }

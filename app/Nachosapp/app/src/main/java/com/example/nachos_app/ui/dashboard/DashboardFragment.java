@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -19,6 +20,7 @@ import com.example.nachos_app.databinding.FragmentDashboardBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,6 +41,7 @@ public class DashboardFragment extends Fragment {
     private EventAdapter eventAdapter;
     private Button filterButton;
     private String currentUserId;
+    private String currentFilter = "All";
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -59,7 +62,10 @@ public class DashboardFragment extends Fragment {
         observeViewModel();
 
         // Load events through ViewModel
-        dashboardViewModel.loadMyEvents(currentUserId);
+        if (currentUserId != null) {
+            dashboardViewModel.loadMyEvents(currentUserId);
+        }
+
 
         return root;
     }
@@ -72,16 +78,13 @@ public class DashboardFragment extends Fragment {
         // Observe loading state
         dashboardViewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
             if (binding == null) return;
+            // Optionally, handle loading indicator visibility here
         });
 
-        // Observe events
-        dashboardViewModel.getEvents().observe(getViewLifecycleOwner(), events -> {
-            updateEventsList();
-        });
+        // Observe events and eventIds to apply filter
+        dashboardViewModel.getEvents().observe(getViewLifecycleOwner(), events -> applyFilter(currentFilter));
+        dashboardViewModel.getEventIds().observe(getViewLifecycleOwner(), eventIds -> applyFilter(currentFilter));
 
-        dashboardViewModel.getEventIds().observe(getViewLifecycleOwner(), eventIds -> {
-            updateEventsList();
-        });
 
         // Observe errors
         dashboardViewModel.getError().observe(getViewLifecycleOwner(), error -> {
@@ -91,28 +94,23 @@ public class DashboardFragment extends Fragment {
     }
 
     /**
-     * Updates the RecyclerView with events data.
-     * Shows empty state message if no events are available.
-     * Ensures events and IDs lists are synchronized before updating.
+     * Updates the RecyclerView with the given events and ids.
+     * Shows an empty state message if the list is empty.
      */
-    private void updateEventsList() {
+    private void updateRecyclerView(List<Event> events, List<String> ids) {
         if (binding == null) return;
 
-        List<Event> events = dashboardViewModel.getEvents().getValue();
-        List<String> eventIds = dashboardViewModel.getEventIds().getValue();
-
-        if (events != null && eventIds != null && events.size() == eventIds.size()) {
-            if (events.isEmpty()) {
-                binding.emptyStateTextView.setVisibility(View.VISIBLE);
-                binding.emptyStateTextView.setText("No events here.\nCreate/Join one to get started!");
-                binding.myEventsRecyclerView.setVisibility(View.GONE);
-            } else {
-                binding.emptyStateTextView.setVisibility(View.GONE);
-                binding.myEventsRecyclerView.setVisibility(View.VISIBLE);
-                eventAdapter.setEvents(events, eventIds);
-            }
+        if (events == null || events.isEmpty()) {
+            binding.emptyStateTextView.setVisibility(View.VISIBLE);
+            binding.emptyStateTextView.setText("No events here.\nCreate/Join one to get started!");
+            binding.myEventsRecyclerView.setVisibility(View.GONE);
+        } else {
+            binding.emptyStateTextView.setVisibility(View.GONE);
+            binding.myEventsRecyclerView.setVisibility(View.VISIBLE);
+            eventAdapter.setEvents(events, ids);
         }
     }
+
 
     /**
      * Initializes view references from the binding.
@@ -134,21 +132,85 @@ public class DashboardFragment extends Fragment {
     }
 
     /**
-     * Sets up the filter button click listener.
-     * Currently shows a placeholder toast message.
+     * Sets up the filter button click listener to show a popup menu and apply the selected filter.
      */
     private void setupFilterButton() {
         filterButton.setOnClickListener(v -> {
-            // TODO: Implement filter functionality
-            Toast.makeText(requireContext(), "Filter coming soon", Toast.LENGTH_SHORT).show();
+            PopupMenu popup = new PopupMenu(requireContext(), filterButton);
+            popup.getMenu().add("All");
+            popup.getMenu().add("Created");
+            popup.getMenu().add("Joined");
+            popup.getMenu().add("Ongoing");
+            popup.getMenu().add("Past");
+            popup.getMenu().add("Future");
+
+            popup.setOnMenuItemClickListener(item -> {
+                currentFilter = item.getTitle().toString();
+                applyFilter(currentFilter);
+                return true;
+            });
+            popup.show();
         });
     }
+
+
+    /**
+     * Applies the selected filter to the list of user events and updates the RecyclerView.
+     * @param filter The filter string to apply.
+     */
+    private void applyFilter(String filter) {
+        List<Event> allUserEvents = dashboardViewModel.getEvents().getValue();
+        List<String> allUserEventIds = dashboardViewModel.getEventIds().getValue();
+
+        if (allUserEvents == null || allUserEventIds == null) {
+            updateRecyclerView(new ArrayList<>(), new ArrayList<>());
+            return;
+        }
+
+        List<Event> filteredEvents = new ArrayList<>();
+        List<String> filteredIds = new ArrayList<>();
+
+        for (int i = 0; i < allUserEvents.size(); i++) {
+            Event event = allUserEvents.get(i);
+            String id = allUserEventIds.get(i);
+            boolean matches = false;
+
+            switch (filter) {
+                case "All":
+                    matches = true;
+                    break;
+                case "Created":
+                    matches = event.getOrganizerId().equals(currentUserId);
+                    break;
+                case "Joined":
+                    matches = !event.getOrganizerId().equals(currentUserId);
+                    break;
+                case "Ongoing": // Assuming Registration Open means Ongoing
+                    matches = event.isRegistrationOpen();
+                    break;
+                case "Past": // Assuming Registration Closed and not upcoming means Past
+                    matches = !event.isRegistrationOpen() && !event.isRegistrationUpcoming();
+                    break;
+                case "Future": // Assuming Registration Upcoming means Future
+                    matches = event.isRegistrationUpcoming();
+                    break;
+            }
+
+            if (matches) {
+                filteredEvents.add(event);
+                filteredIds.add(id);
+            }
+        }
+        updateRecyclerView(filteredEvents, filteredIds);
+    }
+
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
     }
+
 
     @Override
     public void onResume() {
