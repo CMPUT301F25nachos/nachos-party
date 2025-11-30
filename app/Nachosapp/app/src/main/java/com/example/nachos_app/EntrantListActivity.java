@@ -5,7 +5,8 @@ import static android.content.Intent.ACTION_CREATE_DOCUMENT;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
@@ -17,8 +18,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -28,6 +31,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +51,7 @@ public class EntrantListActivity extends AppCompatActivity {
     private static final int CREATE_FILE_REQUEST_CODE = 1;
     private EditText notificationEditText;
     private NotificationSender notifSender;
+    private boolean uidsExist = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,12 +83,18 @@ public class EntrantListActivity extends AppCompatActivity {
         if (listType.equals("enrolled")) setContentView(R.layout.activity_entrant_list_enrolled);
         else setContentView(R.layout.activity_entrant_list);
 
+        setupActionBar();
+        setupRecyclerView();
+        loadEntrants();
+
         // Export CSV button for enrolled entrants
         if (listType.equals("enrolled")) {
             findViewById(R.id.csv_button).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    createFile();
+                    if (uidsExist) {
+                        createFile();
+                    } else Toast.makeText(v.getContext(), "No entrants to export", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -107,9 +118,8 @@ public class EntrantListActivity extends AppCompatActivity {
             });
         }
 
-        setupActionBar();
-        setupRecyclerView();
-        loadEntrants();
+
+
     }
 
     /**
@@ -198,6 +208,7 @@ public class EntrantListActivity extends AppCompatActivity {
         if (userIds.isEmpty()) {
             adapter.setUsers(userIds, userDataList);
             Toast.makeText(this, "No entrants in this list", Toast.LENGTH_SHORT).show();
+            uidsExist = false;
             return;
         }
 
@@ -244,39 +255,85 @@ public class EntrantListActivity extends AppCompatActivity {
         if (requestCode == CREATE_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
             Uri uri = data.getData();
             String filePath = uri.getPath();
+
             if (filePath != null) {
                 // We need to give Firebase operations from getCSVData() some time to finish, so delay calling exportCSV()
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        Toast.makeText(this, "Failed to export CSV", Toast.LENGTH_SHORT).show();
+                final Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        exportCSV(uri, csvData);
                     }
-                    exportCSV(uri, csvData);
-                }).start();
+                }, 5000);
             } else Toast.makeText(this, "Failed to export CSV", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // Pulls data from Firestore to write to be used with exportCSV()
+    /**
+     * Pulls data from Firestore to be used with exportCSV()
+     * @return An array list of CSV data, where each line is an entry in the array
+     */
+    //
     private ArrayList<String> getCSVData() {
         ArrayList<String> csvData = new ArrayList<>();
-        String csvHeader = "uid,timestamp\n";
+        ArrayList<String> uids = new ArrayList<>();
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Date> timestamps = new ArrayList<>();
+        String csvHeader = "name,uid,timestamp\n";
 
+        // Get uids and timestamps from event document
         db.collection("events")
                 .document(eventId)
                 .collection(listType)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    csvData.add(csvHeader);
+                    //csvData.add(csvHeader);
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         String uid = doc.getId();
-                        String timestamp = doc.get("enrolledAt").toString();
-                        String data = uid + "," + timestamp + "\n";
+                        Timestamp timestamp = (Timestamp) doc.get("enrolledAt");
+                        Date formattedTimestamp = timestamp.toDate();
 
-                        csvData.add(data);
+                        uids.add(uid);
+                        timestamps.add(formattedTimestamp);
                     }
                 });
+
+        // Look up names by UID, delaying slightly to let uids come in
+        final Handler nameHandler = new Handler(Looper.getMainLooper());
+        nameHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Look up names by uid
+                for (int i = 0; i < uids.size(); i++) {
+                    final String[] name = new String[1];
+                    DocumentReference docRef = db.collection("users").document(uids.get(i));
+                    docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                        @Override
+                        public void onSuccess(DocumentSnapshot documentSnapshot) {
+                            if (documentSnapshot.exists()) {
+                                Map<String, Object> data = documentSnapshot.getData();
+                                name[0] = data.get("name").toString();
+                                names.add(name[0]);
+                            }
+                        }
+                    });
+                }
+
+            }
+        }, 200);
+
+        // Build csvData with a delay to let uids/names Firebase operations complete
+        final Handler csvDataHandler = new Handler(Looper.getMainLooper());
+        csvDataHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                csvData.add(csvHeader);
+                for (int i = 0; i < uids.size(); i++) {
+                    String data = names.get(i) + "," + uids.get(i) + "," + timestamps.get(i) + "\n";
+                    csvData.add(data);
+                }
+            }
+        }, 400);
         return csvData;
     }
 
