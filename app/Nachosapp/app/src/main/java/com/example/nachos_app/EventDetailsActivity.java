@@ -70,7 +70,6 @@ public class EventDetailsActivity extends AppCompatActivity {
     private Button viewCancelledButton;
     private Button drawLotteryButton;
     private Button drawReplacementButton;
-    private Button sendNotificationButton;
     private View organizerDivider;
     private ActivityResultLauncher<Intent> updateBannerLauncher;
     private Uri selectedNewBannerUri;
@@ -174,7 +173,6 @@ public class EventDetailsActivity extends AppCompatActivity {
         viewCancelledButton = findViewById(R.id.viewCancelledButton);
         drawLotteryButton = findViewById(R.id.drawLotteryButton);
         drawReplacementButton = findViewById(R.id.drawReplacementButton);
-        sendNotificationButton = findViewById(R.id.sendNotificationButton);
 
         // Initialize visibility - hide organizer section initially
         organizerSection.setVisibility(View.GONE);
@@ -238,10 +236,6 @@ public class EventDetailsActivity extends AppCompatActivity {
             intent.putExtra("eventId", eventId);
             intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
-        });
-
-        sendNotificationButton.setOnClickListener(v -> {
-            Toast.makeText(this, "Send notifications coming soon", Toast.LENGTH_SHORT).show();
         });
     }
 

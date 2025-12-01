@@ -394,15 +394,6 @@
                     app:backgroundTint="#B3D9FF"
                     app:cornerRadius="8dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/sendNotificationButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="SEND NOTIFICATIONS TO WAITING LIST"
-                    android:textColor="@android:color/black"
-                    app:backgroundTint="#B3D9FF"
-                    app:cornerRadius="8dp" />
             </LinearLayout>
 
         </LinearLayout>
