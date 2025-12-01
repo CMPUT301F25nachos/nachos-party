@@ -10,7 +10,6 @@ import java.util.Set;
  * Simple class to hold eligible admin emails (only our group)
  *
  *
- * @author Darius
  */
 public final class AdminAllowList {
 

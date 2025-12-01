@@ -78,6 +78,7 @@ public class EventDetailsActivity extends AppCompatActivity {
     private Button viewSelectedButton;
     private Button viewCancelledButton;
     private Button drawLotteryButton;
+    private Button drawReplacementButton;
     private Button sendNotificationButton;
     private View organizerDivider;
     private ActivityResultLauncher<Intent> updateBannerLauncher;
@@ -186,6 +187,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         viewSelectedButton = findViewById(R.id.viewSelectedButton);
         viewCancelledButton = findViewById(R.id.viewCancelledButton);
         drawLotteryButton = findViewById(R.id.drawLotteryButton);
+        drawReplacementButton = findViewById(R.id.drawReplacementButton);
         sendNotificationButton = findViewById(R.id.sendNotificationButton);
 
         // Initialize visibility - hide organizer section initially
@@ -240,6 +242,13 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         drawLotteryButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, DrawLotteryActivity.class);
+            intent.putExtra("eventId", eventId);
+            intent.putExtra("eventName", currentEvent.getEventName());
+            startActivity(intent);
+        });
+
+        drawReplacementButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, DrawReplacementActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
@@ -321,9 +330,9 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         String organizerName = event.getOrganizerName();
         if (organizerName != null && !organizerName.trim().isEmpty()) {
-            organizerText.setText("Organizer: " + organizerName);
+            organizerText.setText("Organizer\n" + organizerName);
         } else {
-            organizerText.setText("Organizer: Unknown");
+            organizerText.setText("Organizer\nUnknown");
         }
 
         descriptionText.setText(event.getDescription());
@@ -332,19 +341,19 @@ public class EventDetailsActivity extends AppCompatActivity {
         Date eventDate = event.getEventDate();
         if (eventDate != null) {
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-            dateText.setText("Event Date: " + dateFormat.format(eventDate));
+            dateText.setText("Event Date\n " + dateFormat.format(eventDate));
         } else {
-            dateText.setText("Event Date: TBA");
+            dateText.setText("Event Date\n"  + "TBA");
         }
 
         Integer maxParticipants = event.getMaxParticipants();
-        spotsText.setText("Total spots: " +
+        spotsText.setText("Total spots\n" +
                 (maxParticipants != null ? maxParticipants : "Unlimited"));
 
         // Display location if available
         String eventLocation = event.getEventLocation();
         if (eventLocation != null && !eventLocation.trim().isEmpty()) {
-            locationText.setText("Location: " + eventLocation);
+            locationText.setText("Location\n" + eventLocation);
             locationText.setVisibility(View.VISIBLE);
         } else {
             locationText.setVisibility(View.GONE);
@@ -365,7 +374,6 @@ public class EventDetailsActivity extends AppCompatActivity {
      * - Count statistics (waiting, selected, enrolled, cancelled)
      * - Navigation buttons to view each list
      * - Draw lottery button
-     * - Send notification button
      */
     private void showOrganizerView(Event event) {
         // Hide join button for organizers
@@ -450,7 +458,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     int count = querySnapshot.size();
-                    entrantWaitlistCountText.setText("Waitlist: " + count + " entrants");
+                    entrantWaitlistCountText.setText("Waitlist\n" + count + " entrants");
                     entrantWaitlistCountText.setVisibility(View.VISIBLE);
                 })
                 .addOnFailureListener(e -> entrantWaitlistCountText.setVisibility(View.GONE));
@@ -484,7 +492,7 @@ public class EventDetailsActivity extends AppCompatActivity {
      */
     private void setRegistrationText(Date start, Date end) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-        String text = "Registration: " + dateFormat.format(start)
+        String text = "Registration\n" + dateFormat.format(start)
                 + " - " + dateFormat.format(end);
         registrationPeriodText.setText(text);
     }
@@ -500,8 +508,14 @@ public class EventDetailsActivity extends AppCompatActivity {
     }
 
     private void checkSelectedStatus() {
-        if (eventRef == null || selectionStatusRegistration != null) {
+        if (eventRef == null) {
             return;
+        }
+
+        // Remove old listener if exists
+        if (selectionStatusRegistration != null) {
+            selectionStatusRegistration.remove();
+            selectionStatusRegistration = null;
         }
 
         selectionStatusRegistration = eventRef.collection("selected")
@@ -512,14 +526,8 @@ public class EventDetailsActivity extends AppCompatActivity {
                     }
 
                     isSelected = (snapshot != null && snapshot.exists());
-                    if (isSelected) {
-                        selectionStatus = snapshot.getString("status");
-                        if (selectionStatus == null || selectionStatus.isEmpty()) {
-                            selectionStatus = "pending";
-                        }
-                    } else {
-                        selectionStatus = null;
-                    }
+                    selectionStatus = isSelected ? "pending" : null;
+
                     updateJoinButton();
                 });
     }
@@ -538,33 +546,15 @@ public class EventDetailsActivity extends AppCompatActivity {
         if (isSelected) {
             joinButton.setVisibility(View.GONE);
             selectionActionContainer.setVisibility(View.VISIBLE);
-            waitlistNoticeText.setVisibility(View.GONE);
-
-            String status = selectionStatus == null ? "pending" : selectionStatus.toLowerCase(Locale.ROOT);
-            switch (status) {
-                case "accepted":
-                    selectionStatusMessage.setText(getString(R.string.selection_confirmed_message));
-                    confirmSelectionButton.setVisibility(View.GONE);
-                    declineSelectionButton.setVisibility(View.GONE);
-                    break;
-                case "declined":
-                    selectionStatusMessage.setText(getString(R.string.selection_declined_message));
-                    confirmSelectionButton.setVisibility(View.GONE);
-                    declineSelectionButton.setVisibility(View.GONE);
-                    break;
-                default:
-                    selectionStatusMessage.setText(getString(R.string.selection_pending_message));
-                    confirmSelectionButton.setVisibility(View.VISIBLE);
-                    declineSelectionButton.setVisibility(View.VISIBLE);
-                    setSelectionButtonsEnabled(true);
-                    break;
-            }
+            selectionStatusMessage.setText(getString(R.string.selection_pending_message));
+            confirmSelectionButton.setVisibility(View.VISIBLE);
+            declineSelectionButton.setVisibility(View.VISIBLE);
+            setSelectionButtonsEnabled(true);
             return;
         }
 
+        // Not selected - hide selection UI
         selectionActionContainer.setVisibility(View.GONE);
-        confirmSelectionButton.setVisibility(View.VISIBLE);
-        declineSelectionButton.setVisibility(View.VISIBLE);
         joinButton.setVisibility(View.VISIBLE);
         waitlistNoticeText.setVisibility(View.GONE);
 
@@ -596,12 +586,6 @@ public class EventDetailsActivity extends AppCompatActivity {
             return;
         }
 
-        String currentStatus = selectionStatus == null ? "pending" : selectionStatus.toLowerCase(Locale.ROOT);
-        if (!"pending".equals(currentStatus)) {
-            toast("You have already responded to this invitation");
-            return;
-        }
-
         setSelectionButtonsEnabled(false);
 
         DocumentReference selectedRef = eventRef.collection("selected").document(uid);
@@ -615,37 +599,68 @@ public class EventDetailsActivity extends AppCompatActivity {
 
                     WriteBatch batch = db.batch();
 
-                    java.util.Map<String, Object> selectionUpdates = new java.util.HashMap<>();
-                    selectionUpdates.put("status", accept ? "accepted" : "declined");
-                    selectionUpdates.put("respondedAt", FieldValue.serverTimestamp());
-                    batch.update(selectedRef, selectionUpdates);
-
-                    DocumentReference targetRef = eventRef.collection(accept ? "enrolled" : "cancelled")
-                            .document(uid);
-                    java.util.Map<String, Object> targetData = new java.util.HashMap<>();
-                    targetData.put("uid", uid);
                     if (accept) {
-                        targetData.put("enrolledAt", FieldValue.serverTimestamp());
-                    } else {
-                        targetData.put("cancelledAt", FieldValue.serverTimestamp());
-                        targetData.put("reason", "declined");
-                    }
-                    batch.set(targetRef, targetData);
+                        // ACCEPTING: Move from selected to enrolled
 
-                    batch.commit()
-                            .addOnSuccessListener(aVoid -> {
-                                toast(accept ? "Spot confirmed!" : "Invitation declined");
-                                selectionStatus = accept ? "accepted" : "declined";
-                                setSelectionButtonsEnabled(true);
-                                updateJoinButton();
-                            })
-                            .addOnFailureListener(e -> {
-                                toast("Failed to update selection: " + e.getMessage());
-                                setSelectionButtonsEnabled(true);
-                            });
+                        // Add to enrolled collection
+                        DocumentReference enrolledRef = eventRef.collection("enrolled").document(uid);
+                        Map<String, Object> enrolledData = new HashMap<>();
+                        enrolledData.put("uid", uid);
+                        enrolledData.put("enrolledAt", FieldValue.serverTimestamp());
+                        enrolledData.put("joinedAt", snapshot.get("joinedAt"));
+                        enrolledData.put("selectedAt", snapshot.get("selectedAt"));
+                        batch.set(enrolledRef, enrolledData);
+
+                        // Remove from selected collection
+                        batch.delete(selectedRef);
+
+                        batch.commit()
+                                .addOnSuccessListener(aVoid -> {
+                                    toast("Spot confirmed!");
+                                    // Update local state
+                                    isSelected = false;
+                                    selectionStatus = null;
+                                    setSelectionButtonsEnabled(true);
+                                    updateJoinButton();
+                                })
+                                .addOnFailureListener(e -> {
+                                    toast("Failed to confirm spot: " + e.getMessage());
+                                    setSelectionButtonsEnabled(true);
+                                });
+                    } else {
+                        // DECLINING: Move from selected to cancelled
+
+                        // Add to cancelled collection
+                        DocumentReference cancelledRef = eventRef.collection("cancelled").document(uid);
+                        Map<String, Object> cancelledData = new HashMap<>();
+                        cancelledData.put("uid", uid);
+                        cancelledData.put("cancelledAt", FieldValue.serverTimestamp());
+                        cancelledData.put("reason", "declined");
+                        cancelledData.put("replacementFilled", false);
+                        cancelledData.put("joinedAt", snapshot.get("joinedAt"));
+                        cancelledData.put("selectedAt", snapshot.get("selectedAt"));
+                        batch.set(cancelledRef, cancelledData);
+
+                        // Remove from selected collection
+                        batch.delete(selectedRef);
+
+                        batch.commit()
+                                .addOnSuccessListener(aVoid -> {
+                                    toast("Invitation declined");
+                                    // Update local state
+                                    isSelected = false;
+                                    selectionStatus = null;
+                                    setSelectionButtonsEnabled(true);
+                                    updateJoinButton();
+                                })
+                                .addOnFailureListener(e -> {
+                                    toast("Failed to decline invitation: " + e.getMessage());
+                                    setSelectionButtonsEnabled(true);
+                                });
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    toast("Failed to update selection: " + e.getMessage());
+                    toast("Failed to process response: " + e.getMessage());
                     setSelectionButtonsEnabled(true);
                 });
     }
@@ -763,7 +778,6 @@ public class EventDetailsActivity extends AppCompatActivity {
 
     }
 
-<<<<<<< HEAD
     /**
      * Saves the user into the Firestore waitlist collection.
      * Includes a timestamp and, if available, the user's latitude and longitude.
@@ -772,19 +786,7 @@ public class EventDetailsActivity extends AppCompatActivity {
      * @param location The user's GPS location, or null if not required.
      */
     private void saveToWaitlist(Location location) {
-=======
-            waitListRef.set(data)
-                    .addOnSuccessListener(aVoid -> {
-                        eventRef.update("currentWaitlistCount", currentWaitlistCount + 1);
-                        toast("You have joined this waitlist");
-                        loadEntrantWaitlistCount();
-                        joinButton.setEnabled(true);
-                    })
-                    .addOnFailureListener(err -> {
-                        toast("Could not join waitlist");
-                        joinButton.setEnabled(true);
-                    });
->>>>>>> origin/main
+        joinButton.setEnabled(false);
 
         // Build waitlist entry
         Map<String, Object> data = new HashMap<>();
@@ -796,6 +798,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             data.put("longitude", location.getLongitude());
         }
 
+        // Write waitlist entry
         waitListRef.set(data)
                 .addOnSuccessListener(aVoid -> {
 
@@ -803,6 +806,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     eventRef.update("currentWaitlistCount", FieldValue.increment(1))
                             .addOnSuccessListener(aVoid2 -> {
                                 toast("You have joined this waitlist");
+                                loadEntrantWaitlistCount();
                                 joinButton.setEnabled(true);
                             })
                             .addOnFailureListener(err -> {
@@ -816,6 +820,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     joinButton.setEnabled(true);
                 });
     }
+
     /**
      * Handles the result of a location permission request.
      * If permission is granted, the app tries to get the GPS location again.

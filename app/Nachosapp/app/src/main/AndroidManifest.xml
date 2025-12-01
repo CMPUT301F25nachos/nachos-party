@@ -40,22 +40,24 @@
             android:label="@string/app_name">
         </activity>
         <activity android:name=".EditProfileActivity" />
-        <activity
-            android:name=".CreateEventActivity" />
-        <activity
-            android:name=".EventDetailsActivity" />
+        <activity android:name=".CreateEventActivity" />
+        <activity android:name=".EventDetailsActivity" />
         <activity android:name=".EntrantListActivity" />
         <activity android:name=".DrawLotteryActivity" />
+        <activity android:name=".DrawReplacementActivity" />
 
 
         <activity android:name="com.example.nachos_app.ui.admin.AdminMenuActivity" />
         <activity android:name="com.example.nachos_app.ui.admin.AdminAllUsersActivity" />
         <activity android:name="com.example.nachos_app.ui.admin.AdminAllEventsActivity" />
+        <activity android:name="com.example.nachos_app.ui.admin.AdminEventImagesActivity" />
+        <activity android:name="com.example.nachos_app.ui.admin.AdminLogsActivity" />
+
+
         <activity
             android:name=".WaitlistMapActivity"
             android:exported="false"/>
 
     </application>
-
 
 </manifest>
