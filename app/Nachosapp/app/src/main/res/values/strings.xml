@@ -45,4 +45,5 @@
     <string name="admin_logs_empty">No notifications have been sent yet.</string>
     <string name="admin_logs_load_fail">Failed to load notification logs</string>
 
+    <string name="waitlist_notice">Selection is by random lottery. If selected you\'ll receive an in-app notification, so keep an eye on your notifications!</string>
 </resources>

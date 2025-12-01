@@ -1,7 +1,10 @@
 package com.example.nachos_app;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -9,6 +12,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -20,6 +25,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.WriteBatch;
 
+import java.io.ByteArrayOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -45,6 +51,8 @@ public class EventDetailsActivity extends AppCompatActivity {
     private TextView selectionStatusMessage;
     private Button confirmSelectionButton;
     private Button declineSelectionButton;
+    private TextView entrantWaitlistCountText;
+    private TextView waitlistNoticeText;
 
     // Organizer views
     private View organizerSection;
@@ -53,7 +61,7 @@ public class EventDetailsActivity extends AppCompatActivity {
     private TextView selectedCountText;
     private TextView enrolledCountText;
     private TextView cancelledCountText;
-    private Button editEventButton;
+    private Button updateBannerButton;
     private Button viewWaitingListButton;
     private Button viewEnrolledButton;
     private Button viewSelectedButton;
@@ -61,6 +69,8 @@ public class EventDetailsActivity extends AppCompatActivity {
     private Button drawLotteryButton;
     private Button sendNotificationButton;
     private View organizerDivider;
+    private ActivityResultLauncher<Intent> updateBannerLauncher;
+    private Uri selectedNewBannerUri;
 
     private FirebaseFirestore db;
     private String uid;
@@ -77,6 +87,18 @@ public class EventDetailsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        updateBannerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(), result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        selectedNewBannerUri = result.getData().getData();
+                        if (selectedNewBannerUri != null) {
+                            updateEventBanner();
+                        }
+                    }
+                }
+        );
+
         setContentView(R.layout.activity_event_details);
 
         setupActionBar();
@@ -124,6 +146,8 @@ public class EventDetailsActivity extends AppCompatActivity {
         organizerText = findViewById(R.id.eventOrganizerTextView);
         registrationPeriodText = findViewById(R.id.eventDrawPeriodTextView);
         descriptionText = findViewById(R.id.eventDescriptionTextView);
+        entrantWaitlistCountText = findViewById(R.id.entrantWaitlistCountTextView);
+        waitlistNoticeText = findViewById(R.id.waitlistNoticeTextView);
         joinButton = findViewById(R.id.joinWaitlistButton);
         showQRCodeButton = findViewById(R.id.showQRCodeButton);
         selectionActionContainer = findViewById(R.id.selectionActionContainer);
@@ -140,7 +164,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         enrolledCountText = findViewById(R.id.enrolledCountText);
         cancelledCountText = findViewById(R.id.cancelledCountText);
 
-        editEventButton = findViewById(R.id.editEventButton);
+        updateBannerButton = findViewById(R.id.updateBannerButton);
         viewWaitingListButton = findViewById(R.id.viewWaitingListButton);
         viewEnrolledButton = findViewById(R.id.viewEnrolledButton);
         viewSelectedButton = findViewById(R.id.viewSelectedButton);
@@ -164,14 +188,13 @@ public class EventDetailsActivity extends AppCompatActivity {
     }
 
     private void setupOrganizerButtons() {
-        editEventButton.setOnClickListener(v -> {
-            Toast.makeText(this, "Edit event coming soon", Toast.LENGTH_SHORT).show();
-        });
+        updateBannerButton.setOnClickListener(v -> {openBannerPicker();});
 
         viewWaitingListButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "waitlist");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 
@@ -179,6 +202,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "enrolled");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 
@@ -186,6 +210,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "selected");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 
@@ -193,6 +218,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "cancelled");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 
@@ -220,7 +246,7 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         String qrCodeBase64 = currentEvent.getQrCodeUrl();
         if (qrCodeBase64 == null || qrCodeBase64.isEmpty()) {
-            Toast.makeText(this, "QR code not available", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "QR code not ready yet, please try again in a moment", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -258,6 +284,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     isOrganizer = event.getOrganizerId().equals(uid);
 
                     populateUI(event);
+                    loadEntrantWaitlistCount();
 
                     if (isOrganizer) {
                         showOrganizerView(event);
@@ -383,6 +410,21 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    private void loadEntrantWaitlistCount() {
+        if (eventRef == null || entrantWaitlistCountText == null) {
+            return;
+        }
+
+        eventRef.collection("waitlist")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    entrantWaitlistCountText.setText("Waitlist: " + count + " entrants");
+                    entrantWaitlistCountText.setVisibility(View.VISIBLE);
+                })
+                .addOnFailureListener(e -> entrantWaitlistCountText.setVisibility(View.GONE));
+    }
+
     /**
      * Displays the entrant view with join/leave waitlist button.
      * Sets up real-time listener for waitlist status changes.
@@ -465,6 +507,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         if (isSelected) {
             joinButton.setVisibility(View.GONE);
             selectionActionContainer.setVisibility(View.VISIBLE);
+            waitlistNoticeText.setVisibility(View.GONE);
 
             String status = selectionStatus == null ? "pending" : selectionStatus.toLowerCase(Locale.ROOT);
             switch (status) {
@@ -492,10 +535,12 @@ public class EventDetailsActivity extends AppCompatActivity {
         confirmSelectionButton.setVisibility(View.VISIBLE);
         declineSelectionButton.setVisibility(View.VISIBLE);
         joinButton.setVisibility(View.VISIBLE);
+        waitlistNoticeText.setVisibility(View.GONE);
 
         if (isOnWaitlist) {
             joinButton.setText("Leave waitlist");
             joinButton.setEnabled(true);
+            waitlistNoticeText.setVisibility(View.VISIBLE);
         } else if (!registrationOpen) {
             if (registrationUpcoming) {
                 joinButton.setText("Registration not open yet");
@@ -641,6 +686,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     .addOnSuccessListener(aVoid -> {
                         eventRef.update("currentWaitlistCount", currentWaitlistCount + 1);
                         toast("You have joined this waitlist");
+                        loadEntrantWaitlistCount();
                         joinButton.setEnabled(true);
                     })
                     .addOnFailureListener(err -> {
@@ -675,6 +721,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     long newCount = Math.max(0, currentWaitlistCount - 1);
                     eventRef.update("currentWaitlistCount", newCount);
                     toast("Removed from waitlist.");
+                    loadEntrantWaitlistCount();
                     joinButton.setEnabled(true);
 
                 }).addOnFailureListener(err -> {
@@ -691,6 +738,99 @@ public class EventDetailsActivity extends AppCompatActivity {
             toast("Could not check waitlist.");
             joinButton.setEnabled(true);
         });
+    }
+
+    /**
+     * Opens image picker for selecting a new event banner.
+     */
+    private void openBannerPicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        updateBannerLauncher.launch(intent);
+    }
+
+    /**
+     * Updates the event banner in Firestore.
+     * Processes the selected image by resizing and converting to base64,
+     * then updates the event document.
+     */
+    private void updateEventBanner() {
+        if (selectedNewBannerUri == null) {
+            return;
+        }
+
+        Toast.makeText(this, "Updating banner...", Toast.LENGTH_SHORT).show();
+
+        new Thread(() -> {
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedNewBannerUri);
+
+                // Calculate new dimensions maintaining aspect ratio
+                int maxWidth = 800;
+                int maxHeight = 600;
+
+                float ratio = Math.min(
+                        (float) maxWidth / bitmap.getWidth(),
+                        (float) maxHeight / bitmap.getHeight()
+                );
+
+                int newWidth = Math.round(bitmap.getWidth() * ratio);
+                int newHeight = Math.round(bitmap.getHeight() * ratio);
+
+                Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+
+                // Convert to base64
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+                byte[] data = baos.toByteArray();
+
+                // Check size
+                if (data.length > 500000) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Image too large, please select a smaller image",
+                                Toast.LENGTH_LONG).show();
+                    });
+                    return;
+                }
+
+                String base64Banner = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
+
+                // Update in Firestore
+                runOnUiThread(() -> saveBannerToFirestore(base64Banner));
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Error processing image: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    /**
+     * Saves the new banner to Firestore and updates the UI.
+     * @param base64Banner Base64 encoded banner image
+     */
+    private void saveBannerToFirestore(String base64Banner) {
+        eventRef.update("bannerUrl", base64Banner)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Banner updated successfully!", Toast.LENGTH_SHORT).show();
+
+                    // Update the current event object
+                    if (currentEvent != null) {
+                        currentEvent.setBannerUrl(base64Banner);
+                    }
+
+                    // Update the banner image view
+                    ImageUtils.loadBase64Image(bannerImage, base64Banner, R.drawable.ic_camera_placeholder);
+
+                    // Clear the selected URI
+                    selectedNewBannerUri = null;
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to update banner: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
     private long safeLong(Long val, long def) {
@@ -726,5 +866,6 @@ public class EventDetailsActivity extends AppCompatActivity {
         if (isOrganizer) {
             updateCounts();
         }
+        loadEntrantWaitlistCount();
     }
 }

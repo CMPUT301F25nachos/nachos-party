@@ -17,11 +17,37 @@
         android:textSize="28sp"
         android:textStyle="bold" />
 
+
     <!-- RecyclerView for Users -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/entrantListRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp" />
+        android:layout_height="521dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp" />
+
+
+    <EditText
+        android:id="@+id/notificationEditText"
+        android:layout_width="364dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/edit_text_background"
+        android:hint="Notification text"
+        android:inputType="text"
+        android:padding="12dp" />
+
+
+    <Button
+        android:id="@+id/send_notification_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        android:text="Send Notifications" />
+
 
 </LinearLayout>

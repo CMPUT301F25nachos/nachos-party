@@ -38,15 +38,14 @@
             <!-- Banner Image -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:layout_margin="16dp"
-                android:background="#D3D3D3">
+                android:layout_height="280dp"
+                android:layout_margin="16dp">
 
                 <ImageView
                     android:id="@+id/eventBannerImageView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
+                    android:scaleType="fitCenter"
                     android:contentDescription="Event banner" />
 
             </FrameLayout>
@@ -60,7 +59,7 @@
                 android:gravity="center"
                 android:text="Event 1"
                 android:textColor="@android:color/black"
-                android:textSize="32sp"
+                android:textSize="30sp"
                 android:textStyle="bold" />
 
             <!-- Event Info Section (Visible to BOTH entrant and organizer) -->
@@ -97,6 +96,16 @@
                     android:textSize="16sp" />
 
                 <TextView
+                    android:id="@+id/entrantWaitlistCountTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Waitlist: --"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/eventLocationTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -123,6 +132,7 @@
                     android:text="Event description goes here"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
+
             </LinearLayout>
 
             <Button
@@ -142,6 +152,18 @@
                 android:textColor="@android:color/white"
                 app:backgroundTint="#2196F3"
                 app:cornerRadius="8dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/waitlistNoticeTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
+                android:text="@string/waitlist_notice"
+                android:textColor="@android:color/black"
+                android:textSize="14sp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -275,11 +297,11 @@
 
                 <!-- Action Buttons -->
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/editEventButton"
+                    android:id="@+id/updateBannerButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="EDIT EVENT DETAILS"
+                    android:text="UPDATE EVENT POSTER"
                     android:textColor="@android:color/black"
                     app:backgroundTint="#B3D9FF"
                     app:cornerRadius="8dp" />
