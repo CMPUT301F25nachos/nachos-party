@@ -67,5 +67,7 @@ dependencies {
     androidTestImplementation("androidx.fragment:fragment-testing:1.6.1")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
 }

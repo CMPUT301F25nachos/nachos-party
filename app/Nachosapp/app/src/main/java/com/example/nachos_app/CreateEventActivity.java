@@ -1,7 +1,9 @@
 package com.example.nachos_app;
 
+import android.Manifest;
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
@@ -21,6 +23,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -35,6 +39,12 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+
+
 
 /**
  * Activity responsible for creating new events with all required details.
@@ -67,13 +77,16 @@ public class CreateEventActivity extends AppCompatActivity {
     private boolean geoLocationEnabled = false;
     private Double eventLatitude = null;
     private Double eventLongitude = null;
+    private static final int LOCATION_PERMISSION_CODE = 1001;
 
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private FusedLocationProviderClient fusedLocationProviderClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         // Hide the action bar
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
@@ -125,10 +138,10 @@ public class CreateEventActivity extends AppCompatActivity {
         enableGeoLocationCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             geoLocationEnabled = isChecked;
             if (isChecked) {
-                // TODO: Implement geolocation functionality
-                // For now, just show a toast
-                Toast.makeText(this, "GeoLocation will be implemented", Toast.LENGTH_SHORT).show();
-                // When implemented, you would call: requestUserLocation();
+                requestUserLocation();
+            }else {
+                eventLatitude = null;
+                eventLongitude = null;
             }
         });
 
@@ -378,7 +391,7 @@ public class CreateEventActivity extends AppCompatActivity {
 
         Event event = new Event(organizerId, organizerName, eventName, description, dateRange,
                 registrationStartDate, registrationEndDate, eventDate, maxParticipants,
-                bannerBase64, null, qrCodeData, new Date(), eventLocation);
+                bannerBase64, null, qrCodeData, new Date(), eventLocation, geoLocationEnabled, eventLatitude, eventLongitude);
 
         db.collection("events").document(eventId)
                 .set(event).addOnSuccessListener(aVoid -> {
@@ -492,7 +505,56 @@ public class CreateEventActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Requests the user's current location.
+     * If the location permission is not granted, the method asks for it.
+     * If permission is granted, it retrieves the last known location and saves
+     * the latitude and longitude for the event. Shows a toast indicating success
+     * or failure.
+     */
     private void requestUserLocation() {
-        // TODO: Implement location request
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_CODE
+            );
+            return;
+        }
+
+        fusedLocationProviderClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        eventLatitude = location.getLatitude();
+                        eventLongitude = location.getLongitude();
+                        Toast.makeText(this, "Location saved!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show());
     }
+    /**
+     * Handles the result of the location permission request.
+     * If permission is granted, it tries to fetch the user's location again.
+     * If permission is denied, the geolocation checkbox is unchecked and a
+     * message is shown to the user.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == LOCATION_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                requestUserLocation(); // permission granted → try again
+            } else {
+                enableGeoLocationCheckBox.setChecked(false);
+                Toast.makeText(this, "Location permission required", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 }
