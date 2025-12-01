@@ -4,8 +4,6 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -18,13 +16,16 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-
 /**
  * RecyclerView adapter for the admin logs screen.
- *
  * <p>
- * This adapter shows a list of all notifications
- * </p>
+ * Each row shows:
+ *  - Event name
+ *  - Recipient name
+ *  - Notification message content
+ *  - Sender name
+ *  - Time the notification was sent
+ *  </p>
  */
 public class AdminLogsAdapter extends RecyclerView.Adapter<AdminLogsAdapter.VH> {
 
@@ -32,14 +33,22 @@ public class AdminLogsAdapter extends RecyclerView.Adapter<AdminLogsAdapter.VH> 
      * Row model for the logs list.
      */
     public static class Row {
+        public String eventName;
         public String recipientName;
-        public String type;
+        public String message;
+        public String senderName;
         public Date sendTime;
     }
-
     private final List<Row> rows = new ArrayList<>();
+
+    @SuppressWarnings("unused")
     private final Context context;
 
+    /**
+     * Creates a new adapter instance.
+     *
+     * @param context activity
+     */
     public AdminLogsAdapter(Context context) {
         this.context = context;
     }
@@ -57,18 +66,16 @@ public class AdminLogsAdapter extends RecyclerView.Adapter<AdminLogsAdapter.VH> 
         notifyDataSetChanged();
     }
 
-
     /**
-     * Creates a new ViewHolder instance by inflating the notification_card layout
+     * Creates a new ViewHolder instance
      */
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.notification_card, parent, false);
-        return new VH(view);
+        View v = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_admin_log, parent, false);
+        return new VH(v);
     }
-
 
     /**
      * Binds data from a row into a ViewHolder
@@ -80,13 +87,32 @@ public class AdminLogsAdapter extends RecyclerView.Adapter<AdminLogsAdapter.VH> 
     public void onBindViewHolder(@NonNull VH holder, int position) {
         Row row = rows.get(position);
 
-        // set recipient name
-        String name = (row.recipientName != null && !row.recipientName.trim().isEmpty())
-                ? row.recipientName
-                : "(unknown user)";
-        holder.tvMessage.setText(name);
+        // Event name
+        String eventName = (row.eventName != null && !row.eventName.trim().isEmpty())
+                ? row.eventName
+                : "(unknown event)";
+        holder.tvEventName.setText(eventName);
 
-        // set the time of notification
+        // Recipient
+        String recipient = (row.recipientName != null && !row.recipientName.trim().isEmpty())
+                ? row.recipientName
+                : "(unknown recipient)";
+        holder.tvRecipient.setText("To: " + recipient);
+
+        // Message content
+        holder.tvMessage.setText(
+                row.message != null && !row.message.trim().isEmpty()
+                        ? row.message
+                        : "(no message)"
+        );
+
+        // Sender
+        String sender = (row.senderName != null && !row.senderName.trim().isEmpty())
+                ? row.senderName
+                : "(unknown organizer)";
+        holder.tvSender.setText("Sender: " + sender);
+
+        // Time
         if (row.sendTime != null) {
             holder.tvTime.setText(
                     DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
@@ -95,21 +121,6 @@ public class AdminLogsAdapter extends RecyclerView.Adapter<AdminLogsAdapter.VH> 
         } else {
             holder.tvTime.setText("");
         }
-
-
-        // use the current notification type, if its null or empty just display general
-        String displayType = (row.type != null && !row.type.trim().isEmpty())
-                ? row.type
-                : "general";
-        holder.tvStatus.setText(displayType);
-
-        // Since we're reusing the notification card
-        // we need to hide all buttons
-        holder.btnDelete.setVisibility(View.GONE);
-        holder.btnDelete.setOnClickListener(null);
-
-        holder.btnViewQueue.setVisibility(View.GONE);
-        holder.btnViewQueue.setOnClickListener(null);
 
         holder.itemView.setOnClickListener(null);
         holder.itemView.setClickable(false);
@@ -124,30 +135,22 @@ public class AdminLogsAdapter extends RecyclerView.Adapter<AdminLogsAdapter.VH> 
     }
 
     /**
-     * ViewHolder class for the logs list item.
-     * <p>
-     * It reuses the views from the existing notification card
-     * </p>
+     * ViewHolder for a log row.
      */
     static class VH extends RecyclerView.ViewHolder {
+        final TextView tvEventName;
+        final TextView tvRecipient;
         final TextView tvMessage;
+        final TextView tvSender;
         final TextView tvTime;
-        final TextView tvStatus;
-        final ImageButton btnDelete;
-        final Button btnViewQueue;
 
-        /**
-         * Constructs a new ViewHolder and binds its view references
-         *
-         * @param itemView the inflated notification_card layout
-         */
         VH(@NonNull View itemView) {
             super(itemView);
-            tvMessage = itemView.findViewById(R.id.tvNotificationMessage);
-            tvTime = itemView.findViewById(R.id.tvNotificationTime);
-            tvStatus = itemView.findViewById(R.id.tvNotificationStatus);
-            btnDelete = itemView.findViewById(R.id.btnDelete);
-            btnViewQueue = itemView.findViewById(R.id.btnViewQueue);
+            tvEventName = itemView.findViewById(R.id.tv_log_event_name);
+            tvRecipient = itemView.findViewById(R.id.tv_log_recipient);
+            tvMessage = itemView.findViewById(R.id.tv_log_message);
+            tvSender = itemView.findViewById(R.id.tv_log_sender);
+            tvTime = itemView.findViewById(R.id.tv_log_time);
         }
     }
 }

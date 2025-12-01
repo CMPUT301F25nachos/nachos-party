@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.nachos_app.R;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -113,27 +114,66 @@ public class AdminAllUsersActivity extends AppCompatActivity {
     }
 
     /**
-     * Remove user and all events they may have created
+     * Removes the user from any events they're in, their notification
+     * subcollection, and all events they may have created
      */
     private void removeUser(UserAdminAdapter.UserRow row, int position) {
         if (row == null || row.id == null) return;
 
-        // find events created by user
+        String userId = row.id;
+
+        // delete user's notification subcollection
+        db.collection("users")
+                .document(userId)
+                .collection("notifications")
+                .get()
+                .addOnSuccessListener(notifSnap -> {
+                    for (DocumentSnapshot d : notifSnap.getDocuments()) {
+                        d.getReference().delete();
+                    }
+                });
+
+        // call helper to remove them from all event subcollections they may be in
+        removeUserFromAllEventSubcollections(userId);
+
+        // Find events created by this user and delete them,
+        // then delete the user document itself.
         db.collection("events")
-                .whereEqualTo("organizerId", row.id)
+                .whereEqualTo("organizerId", userId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
 
-                    // delete those events
+                    // For each event they created, delete its subcollections
+                    String[] subcollections = new String[] {
+                            "waitlist",
+                            "selected",
+                            "enrolled",
+                            "cancelled"
+                    };
+
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        DocumentReference eventRef = doc.getReference();
+                        for (String sub : subcollections) {
+                            eventRef.collection(sub)
+                                    .get()
+                                    .addOnSuccessListener(subSnap -> {
+                                        for (DocumentSnapshot s : subSnap.getDocuments()) {
+                                            s.getReference().delete();
+                                        }
+                                    });
+                        }
+                    }
+
+                    // Then delete those event documents
                     db.runBatch(batch -> {
-                        for (DocumentSnapshot doc : querySnapshot) {
+                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                             batch.delete(doc.getReference());
                         }
                     }).addOnSuccessListener(unusedBatch -> {
 
-                        // delete the user
+                        // Finally, delete the user document itself
                         db.collection("users")
-                                .document(row.id)
+                                .document(userId)
                                 .delete()
                                 .addOnSuccessListener(unusedUser -> {
                                     // Remove from adapter so it disappears from the list
@@ -151,12 +191,55 @@ public class AdminAllUsersActivity extends AppCompatActivity {
                             Toast.makeText(this,
                                     getString(R.string.admin_remove_user_fail) + ": " + e.getMessage(),
                                     Toast.LENGTH_SHORT).show());
-
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this,
                                 getString(R.string.admin_remove_user_fail) + ": " + e.getMessage(),
                                 Toast.LENGTH_SHORT).show());
     }
+
+
+    /**
+     * Removes a user from all event subcollections where they may appear as an entrant
+     * <p>
+     * This scans all events and, for each one:
+     *  - delete a doc with ID == userId in waitlist/selected/enrolled/cancelled
+     *  - delete any docs where the "uid" field equals userId
+     * </p>
+     *
+     * @param userId Firestore document ID in the users collection (same as uid)
+     */
+    private void removeUserFromAllEventSubcollections(String userId) {
+        String[] subcollections = new String[] {
+                "waitlist",
+                "selected",
+                "enrolled",
+                "cancelled"
+        };
+
+        db.collection("events")
+                .get()
+                .addOnSuccessListener(eventsSnap -> {
+                    for (DocumentSnapshot eventDoc : eventsSnap.getDocuments()) {
+                        DocumentReference eventRef = eventDoc.getReference();
+
+                        // delete all references to this user from each event
+                        for (String sub : subcollections) {
+                            eventRef.collection(sub)
+                                    .document(userId)
+                                    .delete();
+                            eventRef.collection(sub)
+                                    .whereEqualTo("uid", userId)
+                                    .get()
+                                    .addOnSuccessListener(subSnap -> {
+                                        for (DocumentSnapshot d : subSnap.getDocuments()) {
+                                            d.getReference().delete();
+                                        }
+                                    });
+                        }
+                    }
+                });
+    }
+
 
 }

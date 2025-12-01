@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.nachos_app.R;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -127,15 +128,38 @@ public class AdminAllEventsActivity extends AppCompatActivity {
     }
 
     /**
-     * Remove event document from Firestore and from the adapter.
+     * Remove an event and its subcollections from Firestore and update the adapter.
+     * This will:
+     *  - delete documents in the event's subcollections first
+     *  - delete the event document itself
      */
     private void removeEvent(EventAdminAdapter.Row row, int position) {
         if (row == null || row.id == null) return;
 
-        // find and remove the event from firebase
-        db.collection("events")
-                .document(row.id)
-                .delete()
+        // Reference to the event document
+        DocumentReference eventRef = db.collection("events").document(row.id);
+
+        // Subcollections used by this event (waitlist / selection flows)
+        String[] subcollections = new String[] {
+                "waitlist",
+                "selected",
+                "enrolled",
+                "cancelled"
+        };
+
+        // delete all subcollections, if any
+        for (String sub : subcollections) {
+            eventRef.collection(sub)
+                    .get()
+                    .addOnSuccessListener(snap -> {
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            doc.getReference().delete();
+                        }
+                    });
+        }
+
+        // Now delete the event document itself
+        eventRef.delete()
                 .addOnSuccessListener(aVoid -> {
                     adapter.removeAt(position);
                     Toast.makeText(this,

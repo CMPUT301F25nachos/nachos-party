@@ -35,6 +35,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/admin_title_event_images"
+            android:textColor="#000000"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_centerInParent="true" />
