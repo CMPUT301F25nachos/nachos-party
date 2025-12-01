@@ -403,6 +403,18 @@
                     android:textColor="@android:color/black"
                     app:backgroundTint="#B3D9FF"
                     app:cornerRadius="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/viewWaitlistMapButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="View Entrant Locations"
+                    android:visibility="gone"
+                    android:textColor="@android:color/black"
+                    app:backgroundTint="#B3D9FF"
+                    app:cornerRadius="8dp"
+                    android:padding="12dp"/>
+
             </LinearLayout>
 
         </LinearLayout>

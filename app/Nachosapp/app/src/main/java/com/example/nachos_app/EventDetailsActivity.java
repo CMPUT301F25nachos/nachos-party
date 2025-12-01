@@ -17,6 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.CancellationToken;
+import com.google.android.gms.tasks.OnTokenCanceledListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -31,6 +33,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import androidx.core.app.ActivityCompat;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 /**
  * Main activity for viewing event details. Provides different views based on
@@ -86,10 +95,15 @@ public class EventDetailsActivity extends AppCompatActivity {
     private String selectionStatus;
     private ListenerRegistration selectionStatusRegistration;
     private Event currentEvent;
+    private FusedLocationProviderClient fusedLocationClient;
+    private static final int LOCATION_PERMISSION_REQUEST = 1001;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         updateBannerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -370,6 +384,21 @@ public class EventDetailsActivity extends AppCompatActivity {
         organizerDivider.setVisibility(View.VISIBLE);
         organizerSection.setVisibility(View.VISIBLE);
 
+        if (event.geoLocationRequired) {
+            Button viewWaitlistMapButton = findViewById(R.id.viewWaitlistMapButton);
+            viewWaitlistMapButton.setVisibility(View.VISIBLE);
+
+            viewWaitlistMapButton.setOnClickListener(v -> {
+                Intent intent = new Intent(this, WaitlistMapActivity.class);
+                intent.putExtra("eventId", eventId);
+                startActivity(intent);
+            });
+        } else {
+            Button viewWaitlistMapButton = findViewById(R.id.viewWaitlistMapButton);
+            viewWaitlistMapButton.setVisibility(View.GONE);
+        }
+
+
         // Update status
         boolean isOpen = event.isRegistrationOpen();
         boolean isUpcoming = event.isRegistrationUpcoming();
@@ -637,12 +666,10 @@ public class EventDetailsActivity extends AppCompatActivity {
     }
 
     /**
-     * Initiates the process to join the event waitlist.
-     * Validates:
-     * - Registration is currently open
-     * - User is not already selected
-     * - User is not already enrolled
-     * Then proceeds with adding user to waitlist collection.
+     * Attempts to add the user to the event waitlist.
+     * Checks that registration is open and that the user is not already selected
+     * or enrolled. If all checks pass, continues the process by calling
+     * proceedJoinWaitlist().
      */
     private void joinWaitlist() {
         joinButton.setEnabled(false);
@@ -685,36 +712,135 @@ public class EventDetailsActivity extends AppCompatActivity {
                             });
                 });
     }
+    /**
+     * Requests a fresh GPS location from the device.
+     * If location permissions are missing, they are requested.
+     * If permissions are granted, attempts to obtain a high-accuracy
+     * location and continues by calling saveToWaitlist().
+     */
+    private void requestFreshLocationFix() {
+        // Check both permissions
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION },
+                    LOCATION_PERMISSION_REQUEST
+            );
+            return;
+        }
+
+        // Permissions are granted → get location
+        CancellationToken token = new CancellationToken() {
+            @Override
+            public boolean isCancellationRequested() { return false; }
+            @NonNull @Override
+            public CancellationToken onCanceledRequested(@NonNull OnTokenCanceledListener listener) {
+                return this;
+            }
+        };
+
+        fusedLocationClient.getCurrentLocation(
+                        com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                        token
+                )
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        saveToWaitlist(location);
+                    } else {
+                        toast("Unable to retrieve GPS location. Make sure location is turned on.");
+                        joinButton.setEnabled(true);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    toast("Could not get your location.");
+                    joinButton.setEnabled(true);
+                });
+    }
+
 
     /**
-     * Adds the user to the waitlist collection.
-     * Increments the currentWaitlistCount in the event document.
-     * Sets joinedAt timestamp using server timestamp.
+     * Continues the join-waitlist process after initial eligibility checks.
+     * If the event requires a location, it requests a fresh GPS fix.
+     * Otherwise, it saves the waitlist entry immediately.
      */
     private void proceedJoinWaitlist() {
-        eventRef.get().addOnSuccessListener(eventSnap -> {
-            Long currentWaitlistCount = safeLong(eventSnap.getLong("currentWaitlistCount"), 0L);
+        if (currentEvent != null && currentEvent.geoLocationRequired) {
+            // Event requires location
+            requestFreshLocationFix();
+        } else {
+            // Event doesn't require location
+            saveToWaitlist(null);
+        }
 
-            java.util.Map<String, Object> data = new java.util.HashMap<>();
-            data.put("uid", uid);
-            data.put("joinedAt", FieldValue.serverTimestamp());
+    }
 
-            waitListRef.set(data)
-                    .addOnSuccessListener(aVoid -> {
-                        eventRef.update("currentWaitlistCount", currentWaitlistCount + 1);
-                        toast("You have joined this waitlist");
-                        loadEntrantWaitlistCount();
-                        joinButton.setEnabled(true);
-                    })
-                    .addOnFailureListener(err -> {
-                        toast("Could not join waitlist");
-                        joinButton.setEnabled(true);
-                    });
+    /**
+     * Saves the user into the Firestore waitlist collection.
+     * Includes a timestamp and, if available, the user's latitude and longitude.
+     * Also increments the event's currentWaitlistCount field.
+     *
+     * @param location The user's GPS location, or null if not required.
+     */
+    private void saveToWaitlist(Location location) {
+        joinButton.setEnabled(false);
 
-        }).addOnFailureListener(err -> {
-            toast("Could not check waitlist.");
-            joinButton.setEnabled(true);
-        });
+        // Build waitlist entry
+        Map<String, Object> data = new HashMap<>();
+        data.put("uid", uid);
+        data.put("joinedAt", FieldValue.serverTimestamp());
+
+        if (location != null) {
+            data.put("latitude", location.getLatitude());
+            data.put("longitude", location.getLongitude());
+        }
+
+        // Write waitlist entry
+        waitListRef.set(data)
+                .addOnSuccessListener(aVoid -> {
+
+                    // Atomic increment — prevents race conditions
+                    eventRef.update("currentWaitlistCount", FieldValue.increment(1))
+                            .addOnSuccessListener(aVoid2 -> {
+                                toast("You have joined this waitlist");
+                                loadEntrantWaitlistCount();
+                                joinButton.setEnabled(true);
+                            })
+                            .addOnFailureListener(err -> {
+                                toast("Joined but failed to update counter.");
+                                joinButton.setEnabled(true);
+                            });
+
+                })
+                .addOnFailureListener(err -> {
+                    toast("Could not join waitlist.");
+                    joinButton.setEnabled(true);
+                });
+    }
+
+    /**
+     * Handles the result of a location permission request.
+     * If permission is granted, the app tries to get the GPS location again.
+     * If denied, the user cannot join events that require location sharing.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, try joining again
+                requestFreshLocationFix();
+            } else {
+                // Permission denied — block joining this event
+                Toast.makeText(this,
+                        "Location permission is required to join this event.",
+                        Toast.LENGTH_LONG).show();
+                joinButton.setEnabled(true);
+            }
+        }
     }
 
     /**
