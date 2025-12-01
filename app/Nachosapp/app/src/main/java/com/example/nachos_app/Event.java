@@ -23,6 +23,7 @@ public class Event {
     private String qrCodeData; // The actual data encoded in QR (event link)
     private Date createdAt;
     private int currentWaitlistCount; // Track how many people joined
+    private String lotteryGuidelines;
 
     public Event() {} // Required for Firestore
 
@@ -43,12 +44,13 @@ public class Event {
      * @param qrCodeData The data encoded in the QR code (event:// URL)
      * @param createdAt Timestamp when the event was created
      * @param eventLocation optional event's location
+     * @param lotteryGuidelines rules/criteria for selection
      */
     public Event(String organizerId, String organizerName, String eventName,
                  String description, String registrationRange, Date registrationStartDate,
                  Date registrationEndDate, Date eventDate, Integer maxParticipants,
                  String bannerUrl, String qrCodeUrl, String qrCodeData, Date createdAt,
-                 String eventLocation) {
+                 String eventLocation, String lotteryGuidelines) {
         this.organizerId = organizerId;
         this.organizerName = organizerName;
         this.eventName = eventName;
@@ -64,6 +66,7 @@ public class Event {
         this.createdAt = createdAt;
         this.currentWaitlistCount = 0;
         this.eventLocation = eventLocation;
+        this.lotteryGuidelines = lotteryGuidelines;
     }
 
     public String getOrganizerId() { return organizerId; }
@@ -81,6 +84,7 @@ public class Event {
     public Date getCreatedAt() { return createdAt; }
     public int getCurrentWaitlistCount() { return currentWaitlistCount; }
     public String getEventLocation() { return eventLocation; }
+    public String getLotteryGuidelines() { return lotteryGuidelines; }
 
     public void setOrganizerId(String organizerId) { this.organizerId = organizerId; }
     public void setOrganizerName(String organizerName) { this.organizerName = organizerName; }
@@ -97,6 +101,7 @@ public class Event {
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
     public void setCurrentWaitlistCount(int currentWaitlistCount) { this.currentWaitlistCount = currentWaitlistCount; }
     public void setEventLocation(String eventLocation) { this.eventLocation = eventLocation; }
+    public void setLotteryGuidelines(String lotteryGuidelines) { this.lotteryGuidelines = lotteryGuidelines; }
 
     /**
      * Checks if the waitlist has reached its maximum capacity.

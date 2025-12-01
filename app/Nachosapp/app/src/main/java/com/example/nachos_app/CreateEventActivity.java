@@ -47,6 +47,7 @@ public class CreateEventActivity extends AppCompatActivity {
     private EditText descriptionEditText;
     private EditText maxParticipantsEditText;
     private EditText eventLocationEditText;
+    private EditText lotteryGuidelinesEditText;
     private TextView registrationStartTextView;
     private TextView registrationEndTextView;
     private TextView eventDateTextView;
@@ -105,6 +106,7 @@ public class CreateEventActivity extends AppCompatActivity {
         descriptionEditText = findViewById(R.id.descriptionEditText);
         maxParticipantsEditText = findViewById(R.id.maxParticipantsEditText);
         eventLocationEditText = findViewById(R.id.eventLocationEditText);
+        lotteryGuidelinesEditText = findViewById(R.id.lotteryGuidelinesEditText);
         registrationStartTextView = findViewById(R.id.registrationStartTextView);
         registrationEndTextView = findViewById(R.id.registrationEndTextView);
         eventDateTextView = findViewById(R.id.eventDateTextView);
@@ -201,6 +203,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String description = descriptionEditText.getText().toString().trim();
         String maxParticipantsStr = maxParticipantsEditText.getText().toString().trim();
         String eventLocation = eventLocationEditText.getText().toString().trim();
+        String lotteryGuidelines = lotteryGuidelinesEditText.getText().toString().trim();
 
         // Validation
         if (eventName.isEmpty()) {
@@ -266,10 +269,11 @@ public class CreateEventActivity extends AppCompatActivity {
         createEventButton.setText("Creating...");
 
         // Create event
-        createEvent(eventName, description, maxParticipants, eventLocation);
+        createEvent(eventName, description, maxParticipants, eventLocation, lotteryGuidelines);
     }
 
-    private void createEvent(String eventName, String description, Integer maxParticipants, String eventLocation) {
+    private void createEvent(String eventName, String description, Integer maxParticipants, String eventLocation,
+                             String lotteryGuidelines) {
         String eventId = db.collection("events").document().getId();
         String organizerId = currentUser.getUid();
 
@@ -281,10 +285,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
                     if (selectedBannerUri != null) {
                         // Process banner as base64
-                        processBanner(eventId, eventName, description, maxParticipants, organizerId, organizerName, eventLocation);
+                        processBanner(eventId, eventName, description, maxParticipants, organizerId, organizerName, eventLocation, lotteryGuidelines);
                     } else {
                         // Create event without banner
-                        saveEventToFirestore(eventId, eventName, description, maxParticipants, organizerId, organizerName, null, eventLocation);
+                        saveEventToFirestore(eventId, eventName, description, maxParticipants, organizerId, organizerName, null, eventLocation, lotteryGuidelines);
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -306,7 +310,7 @@ public class CreateEventActivity extends AppCompatActivity {
      * @param eventLocation optional event's location
      */
     private void processBanner(String eventId, String eventName, String description, Integer maxParticipants,
-                               String organizerId, String organizerName, String eventLocation) {
+                               String organizerId, String organizerName, String eventLocation, String lotteryGuidelines) {
         // Process image on background thread
         new Thread(() -> {
             try {
@@ -344,7 +348,7 @@ public class CreateEventActivity extends AppCompatActivity {
 
                 // Save on main thread
                 runOnUiThread(() -> saveEventToFirestore(eventId, eventName, description, maxParticipants,
-                        organizerId, organizerName, base64Banner, eventLocation));
+                        organizerId, organizerName, base64Banner, eventLocation, lotteryGuidelines));
 
             } catch (Exception e) {
                 runOnUiThread(() -> {
@@ -369,7 +373,8 @@ public class CreateEventActivity extends AppCompatActivity {
      */
     private void saveEventToFirestore(String eventId, String eventName, String description,
                                       Integer maxParticipants, String organizerId,
-                                      String organizerName, String bannerBase64, String eventLocation) {
+                                      String organizerName, String bannerBase64, String eventLocation,
+                                      String lotteryGuidelines) {
         // Generate QR code data
         String qrCodeData = "event://" + eventId;
 
@@ -378,7 +383,7 @@ public class CreateEventActivity extends AppCompatActivity {
 
         Event event = new Event(organizerId, organizerName, eventName, description, dateRange,
                 registrationStartDate, registrationEndDate, eventDate, maxParticipants,
-                bannerBase64, null, qrCodeData, new Date(), eventLocation);
+                bannerBase64, null, qrCodeData, new Date(), eventLocation, lotteryGuidelines);
 
         db.collection("events").document(eventId)
                 .set(event).addOnSuccessListener(aVoid -> {
