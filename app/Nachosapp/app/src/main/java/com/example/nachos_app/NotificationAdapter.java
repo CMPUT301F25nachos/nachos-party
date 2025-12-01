@@ -129,9 +129,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.tvStatus.setTextColor(Color.YELLOW);
                 holder.btnViewQueue.setVisibility(View.VISIBLE);
                 holder.btnViewQueue.setOnClickListener(v -> {
-                    // TODO: implement queue viewing
-                    Toast.makeText(context, "View Queue clicked", Toast.LENGTH_SHORT).show();
-                    //toast just a placeholder, can remove
+                    showWaitlistCount(notification);
                 });
                 break;
             case "lotteryLost":
@@ -226,6 +224,28 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             btnDelete = itemView.findViewById(R.id.btnDelete);
             btnViewQueue = itemView.findViewById((R.id.btnViewQueue));
         }
+    }
+
+    private void showWaitlistCount(Notification notification) {
+        String eventId = notification.getEventId();
+        if (eventId == null || eventId.isEmpty()) {
+            Toast.makeText(context, "Event unavailable", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("events")
+                .document(eventId)
+                .collection("waitlist")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    String msg = "Waitlist has " + count + " entrant" + (count == 1 ? "" : "s");
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(context, "Could not load waitlist", Toast.LENGTH_SHORT).show()
+                );
     }
 
     private void openEventDetails(Notification notification) {
