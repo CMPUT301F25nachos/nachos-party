@@ -1,5 +1,7 @@
 package com.example.nachos_app;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -130,26 +132,51 @@ public class NotificationSender {
      * Respects notification preferences defined by the user
      * @param message Custom text to send to the user
      */
-    public void sendListNotifications(String message) {
-        if (uids == null && type == null) return;
-        for (String uid : uids) {
-            db.collection("users").document(uid).get().addOnSuccessListener(userSnap -> {
-                if (userSnap.exists()) {
-                    String pref = userSnap.getString("notificationPreference");
-                    // Checks user notification preferences before sending notif
-                    if (pref == null || "yes".equalsIgnoreCase(pref)) {
-                        Map<String, Object> notif = new HashMap<>();
-                        notif.put("uid", uid);
-                        notif.put("eventId", eventId);
-                        notif.put("sendTime", new Date());
-                        notif.put("type", type);
-                        notif.put("message", eventName + ": " + message);
-
-                        db.collection("users").document(uid).collection("notifications").add(notif);
-                    }
-                }
-            });
+    public Task<Void> sendListNotifications(String message) {
+        if (uids == null || uids.isEmpty() || type == null) {
+            return Tasks.forResult(null);
         }
+
+        List<Task<Void>> tasks = new ArrayList<>();
+
+        for (String uid : uids) {
+            Task<Void> task = db.collection("users")
+                    .document(uid)
+                    .get()
+                    .continueWithTask(userTask -> {
+                        if (!userTask.isSuccessful()) {
+                            Exception e = userTask.getException();
+                            return Tasks.forException(e != null ? e : new Exception("Failed to fetch user"));
+                        }
+
+                        DocumentSnapshot userSnap = userTask.getResult();
+                        if (userSnap != null && userSnap.exists()) {
+                            String pref = userSnap.getString("notificationPreference");
+                            // Checks user notification preferences before sending notif
+                            if (pref == null || "yes".equalsIgnoreCase(pref)) {
+                                Map<String, Object> notif = new HashMap<>();
+                                notif.put("uid", uid);
+                                notif.put("eventId", eventId);
+                                notif.put("sendTime", new Date());
+                                notif.put("type", type);
+                                notif.put("message", eventName + ": " + message);
+
+                                return db.collection("users")
+                                        .document(uid)
+                                        .collection("notifications")
+                                        .add(notif)
+                                        .continueWith(addTask -> null);
+                            }
+                        }
+
+                        // User opted out or missing user doc: treat as no-op success
+                        return Tasks.forResult(null);
+                    });
+
+            tasks.add(task);
+        }
+
+        return Tasks.whenAll(tasks);
     }
 
 }
