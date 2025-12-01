@@ -135,7 +135,6 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 .collection(displayMode)
                 .document(uid);
 
-        // Get the source document first to preserve data
         sourceRef.get().addOnSuccessListener(sourceSnapshot -> {
             if (!sourceSnapshot.exists()) {
                 Toast.makeText(context, "Entrant not found", Toast.LENGTH_SHORT).show();
@@ -144,11 +143,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
             WriteBatch batch = db.batch();
 
-            // Add to cancelled collection with preserved data
             Map<String, Object> cancelledData = new HashMap<>();
             cancelledData.put("uid", uid);
             cancelledData.put("cancelledAt", FieldValue.serverTimestamp());
             cancelledData.put("reason", reason);
+            cancelledData.put("replacementFilled", false);  // Track if slot is filled
 
             // Preserve historical data
             if (sourceSnapshot.contains("joinedAt")) {
@@ -167,12 +166,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                     .document(uid);
             batch.set(cancelledRef, cancelledData);
 
-            // Remove from source collection
             batch.delete(sourceRef);
 
             batch.commit()
                     .addOnSuccessListener(aVoid -> {
-                        // Remove from local list
                         int index = userIds.indexOf(uid);
                         if (index != -1) {
                             userIds.remove(index);
@@ -180,7 +177,6 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                             notifyItemRemoved(index);
                         }
 
-                        // Delete selection notification if cancelling from selected
                         if (displayMode.equals("selected")) {
                             deleteSelectionNotification(uid, eventId);
                         }
@@ -191,9 +187,6 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                         Toast.makeText(context, "Failed to cancel entrant: " + e.getMessage(),
                                 Toast.LENGTH_SHORT).show();
                     });
-        }).addOnFailureListener(e -> {
-            Toast.makeText(context, "Failed to load entrant data: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
         });
     }
 

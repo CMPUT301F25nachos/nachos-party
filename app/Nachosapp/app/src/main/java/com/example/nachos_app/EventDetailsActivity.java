@@ -608,6 +608,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                         cancelledData.put("uid", uid);
                         cancelledData.put("cancelledAt", FieldValue.serverTimestamp());
                         cancelledData.put("reason", "declined");
+                        cancelledData.put("replacementFilled", false);
                         cancelledData.put("joinedAt", snapshot.get("joinedAt"));
                         cancelledData.put("selectedAt", snapshot.get("selectedAt"));
                         batch.set(cancelledRef, cancelledData);

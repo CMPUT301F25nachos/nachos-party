@@ -78,13 +78,22 @@ public class DashboardFragment extends Fragment {
         // Observe loading state
         dashboardViewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
             if (binding == null) return;
-            // Optionally, handle loading indicator visibility here
         });
 
-        // Observe events and eventIds to apply filter
-        dashboardViewModel.getEvents().observe(getViewLifecycleOwner(), events -> applyFilter(currentFilter));
-        dashboardViewModel.getEventIds().observe(getViewLifecycleOwner(), eventIds -> applyFilter(currentFilter));
+        // Check both lists are ready before filtering
+        dashboardViewModel.getEvents().observe(getViewLifecycleOwner(), events -> {
+            List<String> eventIds = dashboardViewModel.getEventIds().getValue();
+            if (events != null && eventIds != null && events.size() == eventIds.size()) {
+                applyFilter(currentFilter);
+            }
+        });
 
+        dashboardViewModel.getEventIds().observe(getViewLifecycleOwner(), eventIds -> {
+            List<Event> events = dashboardViewModel.getEvents().getValue();
+            if (events != null && eventIds != null && events.size() == eventIds.size()) {
+                applyFilter(currentFilter);
+            }
+        });
 
         // Observe errors
         dashboardViewModel.getError().observe(getViewLifecycleOwner(), error -> {
@@ -162,7 +171,9 @@ public class DashboardFragment extends Fragment {
         List<Event> allUserEvents = dashboardViewModel.getEvents().getValue();
         List<String> allUserEventIds = dashboardViewModel.getEventIds().getValue();
 
-        if (allUserEvents == null || allUserEventIds == null) {
+        // Safety check
+        if (allUserEvents == null || allUserEventIds == null ||
+                allUserEvents.size() != allUserEventIds.size()) {
             updateRecyclerView(new ArrayList<>(), new ArrayList<>());
             return;
         }

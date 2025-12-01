@@ -78,10 +78,11 @@ public class DrawReplacementActivity extends AppCompatActivity {
             notifSender = new NotificationSender(eventId, eventName, db);
         }
 
-        // Count all cancelled entries (these are the available replacement slots)
+        // Count only cancelled entries that haven't been replaced yet
         db.collection("events")
                 .document(eventId)
                 .collection("cancelled")
+                .whereEqualTo("replacementFilled", false)  // Only unfilled slots
                 .get()
                 .addOnSuccessListener(cancelledSnapshot -> {
                     availableSlots = cancelledSnapshot.size();
@@ -195,49 +196,70 @@ public class DrawReplacementActivity extends AppCompatActivity {
     }
 
     private void moveToSelected(List<DocumentSnapshot> replacements) {
-        WriteBatch batch = db.batch();
+        // Fetch the cancelled slots to mark as filled
+        db.collection("events")
+                .document(eventId)
+                .collection("cancelled")
+                .whereEqualTo("replacementFilled", false)
+                .limit(replacements.size())
+                .get()
+                .addOnSuccessListener(cancelledSnapshot -> {
+                    // Create the batch with all operations
+                    WriteBatch batch = db.batch();
 
-        for (DocumentSnapshot doc : replacements) {
-            String uid = doc.getString("uid");
+                    // Add replacements to selected and remove from waitlist
+                    for (DocumentSnapshot doc : replacements) {
+                        String uid = doc.getString("uid");
 
-            // Add to selected collection
-            Map<String, Object> selectedData = new HashMap<>();
-            selectedData.put("uid", uid);
-            selectedData.put("joinedAt", doc.get("joinedAt"));
-            selectedData.put("selectedAt", FieldValue.serverTimestamp());
+                        // Add to selected collection
+                        Map<String, Object> selectedData = new HashMap<>();
+                        selectedData.put("uid", uid);
+                        selectedData.put("joinedAt", doc.get("joinedAt"));
+                        selectedData.put("selectedAt", FieldValue.serverTimestamp());
 
-            batch.set(db.collection("events")
-                    .document(eventId)
-                    .collection("selected")
-                    .document(uid), selectedData);
+                        batch.set(db.collection("events")
+                                .document(eventId)
+                                .collection("selected")
+                                .document(uid), selectedData);
 
-            // Remove from waitlist
-            batch.delete(db.collection("events")
-                    .document(eventId)
-                    .collection("waitlist")
-                    .document(uid));
-        }
+                        // Remove from waitlist
+                        batch.delete(db.collection("events")
+                                .document(eventId)
+                                .collection("waitlist")
+                                .document(uid));
+                    }
 
-        // Commit batch
-        batch.commit()
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Successfully selected " + replacements.size() +
-                            " replacement(s)!", Toast.LENGTH_LONG).show();
+                    // Mark cancelled slots as filled
+                    for (DocumentSnapshot cancelledDoc : cancelledSnapshot.getDocuments()) {
+                        batch.update(cancelledDoc.getReference(), "replacementFilled", true);
+                    }
 
-                    // Update waitlist count
-                    db.collection("events")
-                            .document(eventId)
-                            .update("currentWaitlistCount",
-                                    FieldValue.increment(-replacements.size()));
+                    // Commit the complete batch
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(this, "Successfully selected " + replacements.size() +
+                                        " replacement(s)!", Toast.LENGTH_LONG).show();
 
-                    // Send notifications
-                    notifSender.sendSelectionNotifications(replacements, new ArrayList<>());
+                                // Update waitlist count
+                                db.collection("events")
+                                        .document(eventId)
+                                        .update("currentWaitlistCount",
+                                                FieldValue.increment(-replacements.size()));
 
-                    drawButton.setEnabled(true);
-                    finish();
+                                // Send notifications
+                                notifSender.sendSelectionNotifications(replacements, new ArrayList<>());
+
+                                drawButton.setEnabled(true);
+                                finish();
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Failed to complete draw: " + e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                                drawButton.setEnabled(true);
+                            });
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to complete draw: " + e.getMessage(),
+                    Toast.makeText(this, "Failed to fetch cancelled slots: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                     drawButton.setEnabled(true);
                 });
