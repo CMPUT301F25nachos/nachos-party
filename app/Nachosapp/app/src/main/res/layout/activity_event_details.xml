@@ -73,7 +73,10 @@
                     android:id="@+id/eventOrganizerTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Organizer: John Doe"
+                    android:text="Organizer"
+                    android:drawableStart="@android:drawable/ic_menu_myplaces"
+                    android:drawablePadding="8dp"
+                    android:drawableTint="@android:color/black"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
 
@@ -82,6 +85,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Event Date: Sep 5, 2025"
+                    android:drawableStart="@android:drawable/ic_menu_my_calendar"
+                    android:drawablePadding="8dp"
+                    android:drawableTint="@android:color/black"
                     android:layout_marginTop="8dp"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
@@ -91,6 +97,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawableStart="@android:drawable/ic_menu_sort_by_size"
+                    android:drawablePadding="8dp"
+                    android:drawableTint="@android:color/black"
                     android:text="Total spots: 20"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
@@ -100,6 +109,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawableStart="@android:drawable/ic_menu_agenda"
+                    android:drawablePadding="8dp"
+                    android:drawableTint="@android:color/black"
                     android:text="Waitlist: --"
                     android:textColor="@android:color/black"
                     android:textSize="16sp"
@@ -120,15 +132,28 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Registration: Oct 1 – Oct 31"
+                    android:drawableStart="@android:drawable/ic_menu_today"
+                    android:drawablePadding="8dp"
+                    android:drawableTint="@android:color/black"
+                    android:text="Registration: Oct 1 - Oct 31"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/eventDescriptionHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="About Event"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/eventDescriptionTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="8dp"
                     android:text="Event description goes here"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
@@ -137,17 +162,20 @@
 
             <Button
                 android:id="@+id/showQRCodeButton"
-                android:layout_width="match_parent"
+                android:layout_width="200dp"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:text="Show QR Code"
-                android:layout_margin="16dp" />
+                android:layout_margin="10dp"
+                app:cornerRadius="8dp"/>
 
             <!-- Entrant Join Button (Only visible to non-organizers) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/joinWaitlistButton"
-                android:layout_width="match_parent"
+                android:layout_width="200dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
+                android:layout_gravity="center"
+                android:layout_margin="10dp"
                 android:text="Join Waitlist"
                 android:textColor="@android:color/white"
                 app:backgroundTint="#2196F3"
@@ -352,16 +380,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="DRAW LOTTERY"
-                    android:textColor="@android:color/black"
-                    app:backgroundTint="#B3D9FF"
-                    app:cornerRadius="8dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/sendNotificationButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="SEND NOTIFICATIONS TO WAITING LIST"
                     android:textColor="@android:color/black"
                     app:backgroundTint="#B3D9FF"
                     app:cornerRadius="8dp" />
