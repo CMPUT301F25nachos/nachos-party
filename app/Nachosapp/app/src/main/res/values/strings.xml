@@ -20,5 +20,30 @@
     <string name="selection_decline_button">Decline</string>
     <string name="selection_confirmed_message">You\'re confirmed for this event.</string>
     <string name="selection_declined_message">You declined this invitation.</string>
+    <string name="admin_title_event_images">Event Images</string>
+    <string name="admin_no_images_found">No event images found</string>
+    <string name="admin_load_images_fail">Failed to load images</string>
+    <string name="admin_remove_image_title">Remove image?</string>
+    <string name="admin_remove_image_message">Remove this image from the event?</string>
+    <string name="admin_remove_image_confirm">Remove</string>
+    <string name="admin_remove_image_cancel">Cancel</string>
+    <string name="admin_remove_image_success">Image removed from event</string>
+    <string name="admin_remove_image_fail">Failed to remove image</string>
+    <string name="admin_remove_event_title">Remove event?</string>
+    <string name="admin_remove_event_message">Are you sure you want to remove "%1$s"?</string>
+    <string name="admin_remove_event_confirm">Remove</string>
+    <string name="admin_remove_event_cancel">Cancel</string>
+    <string name="admin_remove_event_success">Event removed</string>
+    <string name="admin_remove_event_fail">Failed to remove event</string>
+    <string name="admin_remove_user_title">Remove user?</string>
+    <string name="admin_remove_user_message">Are you sure you want to remove "%1$s"? This will remove their profile and any events they may have created</string>
+    <string name="admin_remove_user_confirm">Remove</string>
+    <string name="admin_remove_user_cancel">Cancel</string>
+    <string name="admin_remove_user_success">User and events removed</string>
+    <string name="admin_remove_user_fail">Failed to remove user</string>
+    <string name="admin_title_logs">Notification Logs</string>
+    <string name="admin_logs_empty">No notifications have been sent yet.</string>
+    <string name="admin_logs_load_fail">Failed to load notification logs</string>
+
     <string name="waitlist_notice">Selection is by random lottery. If selected you\'ll receive an in-app notification, so keep an eye on your notifications!</string>
 </resources>

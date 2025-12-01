@@ -27,6 +27,10 @@ public class Event {
     private int currentWaitlistCount; // Track how many people joined
     private transient String userParticipationStatus; // Not stored in Firestore
 
+    public boolean geoLocationRequired;
+    private Double latitude;
+    private Double longitude;
+
     public Event() {} // Required for Firestore
 
     /**
@@ -67,6 +71,56 @@ public class Event {
         this.createdAt = createdAt;
         this.currentWaitlistCount = 0;
         this.eventLocation = eventLocation;
+
+    }
+    /**
+     * Constructs a new Event with all required fields including location requirements
+     *
+     * @param organizerId ID of the user who created the event
+     * @param organizerName name of the organizer
+     * @param eventName name/title of the event
+     * @param description description of the event
+     * @param registrationRange registration range
+     * @param registrationStartDate registration opens
+     * @param registrationEndDate registration closes
+     * @param eventDate date when the event occurs (can be null)
+     * @param maxParticipants Maximum waitlist capacity (null for unlimited)
+     * @param bannerUrl Base64 encoded event poster image
+     * @param qrCodeUrl Base64 encoded QR code image
+     * @param qrCodeData The data encoded in the QR code (event:// URL)
+     * @param createdAt Timestamp when the event was created
+     * @param eventLocation optional event's location
+     * @param geoLocationRequired boolean for requiring location
+     * @param latitude double for event loc
+     * @param longitude double for event loc
+     */
+    public Event(String organizerId, String organizerName, String eventName,
+                 String description, String registrationRange, Date registrationStartDate,
+                 Date registrationEndDate, Date eventDate, Integer maxParticipants,
+                 String bannerUrl, String qrCodeUrl, String qrCodeData, Date createdAt,
+                 String eventLocation, boolean geoLocationRequired, Double latitude, Double longitude) {
+        this.organizerId = organizerId;
+        this.organizerName = organizerName;
+        this.eventName = eventName;
+        this.description = description;
+        this.registrationRange = registrationRange;
+        this.registrationStartDate = registrationStartDate;
+        this.registrationEndDate = registrationEndDate;
+        this.eventDate = eventDate;
+        this.maxParticipants = maxParticipants;
+        this.bannerUrl = bannerUrl;
+        this.qrCodeUrl = qrCodeUrl;
+        this.qrCodeData = qrCodeData;
+        this.createdAt = createdAt;
+        this.currentWaitlistCount = 0;
+        this.eventLocation = eventLocation;
+        this.geoLocationRequired =  geoLocationRequired;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
+    public boolean isGeoLocationRequired() {
+        return geoLocationRequired;
     }
 
     public String getOrganizerId() { return organizerId; }
