@@ -98,8 +98,11 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     .delete()
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(context, "Notification deleted", Toast.LENGTH_SHORT).show();
-                        notificationList.remove(adapterPosition);
-                        notifyItemRemoved(adapterPosition);
+                        // Need to run these operations on their own thread to avoid crashing
+                        new Thread(() -> {
+                            notificationList.remove(adapterPosition);
+                            notifyItemRemoved(adapterPosition);
+                        });
                     })
                     .addOnFailureListener(e ->
                             Toast.makeText(context, "Failed to delete notification", Toast.LENGTH_SHORT).show()
@@ -126,15 +129,58 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.tvStatus.setTextColor(Color.YELLOW);
                 holder.btnViewQueue.setVisibility(View.VISIBLE);
                 holder.btnViewQueue.setOnClickListener(v -> {
-                    // TODO: implement queue viewing
-                    Toast.makeText(context, "View Queue clicked", Toast.LENGTH_SHORT).show();
-                    //toast just a placeholder, can remove
+                    showWaitlistCount(notification);
                 });
                 break;
             case "lotteryLost":
                 holder.tvStatus.setText("Declined");
                 holder.tvStatus.setTextColor(Color.RED);
                 holder.btnViewQueue.setVisibility(View.GONE);
+                break;
+            case "selected":
+                holder.tvStatus.setText("Selected");
+                holder.tvStatus.setTextColor(Color.BLUE);
+                holder.btnViewQueue.setVisibility(View.GONE);
+
+                holder.itemView.setClickable(true);
+                holder.itemView.setOnClickListener(v -> {
+                    int adapterPosition = holder.getBindingAdapterPosition();
+                    if (adapterPosition == RecyclerView.NO_POSITION) {
+                        return;
+                    }
+                    Notification selected = notificationList.get(adapterPosition);
+                    openEventDetails(selected);
+                });
+                break;
+            case "cancelled":
+                holder.tvStatus.setText("Cancelled");
+                holder.tvStatus.setTextColor(Color.RED);
+                holder.btnViewQueue.setVisibility(View.GONE);
+
+                holder.itemView.setClickable(true);
+                holder.itemView.setOnClickListener(v -> {
+                    int adapterPosition = holder.getBindingAdapterPosition();
+                    if (adapterPosition == RecyclerView.NO_POSITION) {
+                        return;
+                    }
+                    Notification selected = notificationList.get(adapterPosition);
+                    openEventDetails(selected);
+                });
+                break;
+            case "waitlist":
+                holder.tvStatus.setText("Waitlist");
+                holder.tvStatus.setTextColor(Color.GRAY);
+                holder.btnViewQueue.setVisibility(View.GONE);
+
+                holder.itemView.setClickable(true);
+                holder.itemView.setOnClickListener(v -> {
+                    int adapterPosition = holder.getBindingAdapterPosition();
+                    if (adapterPosition == RecyclerView.NO_POSITION) {
+                        return;
+                    }
+                    Notification selected = notificationList.get(adapterPosition);
+                    openEventDetails(selected);
+                });
                 break;
         }
     }
@@ -178,6 +224,28 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             btnDelete = itemView.findViewById(R.id.btnDelete);
             btnViewQueue = itemView.findViewById((R.id.btnViewQueue));
         }
+    }
+
+    private void showWaitlistCount(Notification notification) {
+        String eventId = notification.getEventId();
+        if (eventId == null || eventId.isEmpty()) {
+            Toast.makeText(context, "Event unavailable", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("events")
+                .document(eventId)
+                .collection("waitlist")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    String msg = "Waitlist has " + count + " entrant" + (count == 1 ? "" : "s");
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(context, "Could not load waitlist", Toast.LENGTH_SHORT).show()
+                );
     }
 
     private void openEventDetails(Notification notification) {
