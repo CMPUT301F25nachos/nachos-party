@@ -55,6 +55,7 @@ public class EventDetailsActivity extends AppCompatActivity {
     private Button declineSelectionButton;
     private TextView entrantWaitlistCountText;
     private TextView waitlistNoticeText;
+    private TextView enrolledStatusText;
 
     // Organizer views
     private View organizerSection;
@@ -83,8 +84,10 @@ public class EventDetailsActivity extends AppCompatActivity {
     private boolean isOnWaitlist = false;
     private boolean isOrganizer = false;
     private boolean isSelected = false;
+    private boolean isEnrolled = false;
     private String selectionStatus;
     private ListenerRegistration selectionStatusRegistration;
+    private ListenerRegistration enrolledStatusRegistration;
     private Event currentEvent;
 
     @Override
@@ -151,6 +154,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         descriptionText = findViewById(R.id.eventDescriptionTextView);
         entrantWaitlistCountText = findViewById(R.id.entrantWaitlistCountTextView);
         waitlistNoticeText = findViewById(R.id.waitlistNoticeTextView);
+        enrolledStatusText = findViewById(R.id.enrolledStatusTextView);
         joinButton = findViewById(R.id.joinWaitlistButton);
         showQRCodeButton = findViewById(R.id.showQRCodeButton);
         selectionActionContainer = findViewById(R.id.selectionActionContainer);
@@ -181,6 +185,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         organizerDivider.setVisibility(View.GONE);
         joinButton.setVisibility(View.GONE);
         selectionActionContainer.setVisibility(View.GONE);
+        enrolledStatusText.setVisibility(View.GONE);
 
         // Show QR Code button is visible to all users
         showQRCodeButton.setOnClickListener(v -> showQRCodeDialog());
@@ -301,6 +306,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                         showOrganizerView(event);
                     } else {
                         showEntrantView();
+                        checkEnrolledStatus();
                         checkWaitlist();
                         checkSelectedStatus();
                     }
@@ -365,6 +371,9 @@ public class EventDetailsActivity extends AppCompatActivity {
         // Hide join button for organizers
         joinButton.setVisibility(View.GONE);
         selectionActionContainer.setVisibility(View.GONE);
+        if (enrolledStatusText != null) {
+            enrolledStatusText.setVisibility(View.GONE);
+        }
 
         // Show divider and organizer section
         organizerDivider.setVisibility(View.VISIBLE);
@@ -503,6 +512,36 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    private void checkEnrolledStatus() {
+        if (eventRef == null) {
+            return;
+        }
+
+        if (enrolledStatusRegistration != null) {
+            enrolledStatusRegistration.remove();
+            enrolledStatusRegistration = null;
+        }
+
+        enrolledStatusRegistration = eventRef.collection("enrolled")
+                .document(uid)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        return;
+                    }
+
+                    boolean currentlyEnrolled = snapshot != null && snapshot.exists();
+                    if (currentlyEnrolled != isEnrolled) {
+                        isEnrolled = currentlyEnrolled;
+                        if (isEnrolled) {
+                            isSelected = false;
+                            selectionStatus = null;
+                        }
+                    }
+
+                    updateJoinButton();
+                });
+    }
+
     /**
      * Updates the join button state and text based on:
      * - Whether user is on waitlist
@@ -514,13 +553,32 @@ public class EventDetailsActivity extends AppCompatActivity {
         boolean registrationOpen = currentEvent != null && currentEvent.isRegistrationOpen();
         boolean registrationUpcoming = currentEvent != null && currentEvent.isRegistrationUpcoming();
 
+        if (enrolledStatusText != null) {
+            enrolledStatusText.setVisibility(View.GONE);
+        }
+
         if (isSelected) {
             joinButton.setVisibility(View.GONE);
+            if (waitlistNoticeText != null) {
+                waitlistNoticeText.setVisibility(View.GONE);
+            }
             selectionActionContainer.setVisibility(View.VISIBLE);
             selectionStatusMessage.setText(getString(R.string.selection_pending_message));
             confirmSelectionButton.setVisibility(View.VISIBLE);
             declineSelectionButton.setVisibility(View.VISIBLE);
             setSelectionButtonsEnabled(true);
+            return;
+        }
+
+        if (isEnrolled) {
+            joinButton.setVisibility(View.GONE);
+            selectionActionContainer.setVisibility(View.GONE);
+            if (waitlistNoticeText != null) {
+                waitlistNoticeText.setVisibility(View.GONE);
+            }
+            if (enrolledStatusText != null) {
+                enrolledStatusText.setVisibility(View.VISIBLE);
+            }
             return;
         }
 
@@ -590,6 +648,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                                     toast("Spot confirmed!");
                                     // Update local state
                                     isSelected = false;
+                                    isEnrolled = true;
                                     selectionStatus = null;
                                     setSelectionButtonsEnabled(true);
                                     updateJoinButton();
@@ -646,6 +705,12 @@ public class EventDetailsActivity extends AppCompatActivity {
      */
     private void joinWaitlist() {
         joinButton.setEnabled(false);
+
+        if (isEnrolled) {
+            toast("You are already enrolled in this event");
+            joinButton.setEnabled(true);
+            return;
+        }
 
         // Check if registration is open
         if (currentEvent == null || !currentEvent.isRegistrationOpen()) {
@@ -873,6 +938,10 @@ public class EventDetailsActivity extends AppCompatActivity {
         if (selectionStatusRegistration != null) {
             selectionStatusRegistration.remove();
             selectionStatusRegistration = null;
+        }
+        if (enrolledStatusRegistration != null) {
+            enrolledStatusRegistration.remove();
+            enrolledStatusRegistration = null;
         }
     }
 

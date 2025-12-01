@@ -46,4 +46,5 @@
     <string name="admin_logs_load_fail">Failed to load notification logs</string>
 
     <string name="waitlist_notice">Selection is by random lottery. If selected you\'ll receive an in-app notification, so keep an eye on your notifications!</string>
+    <string name="enrolled_status_message">You have successfully enrolled in this event. We look forward to seeing you then.</string>
 </resources>
