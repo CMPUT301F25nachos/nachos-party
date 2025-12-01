@@ -131,10 +131,13 @@ public class AdminAllEventsActivity extends AppCompatActivity {
      * Remove an event and its subcollections from Firestore and update the adapter.
      * This will:
      *  - delete documents in the event's subcollections first
+     *  - find notifications associated with that event, and then remove them
      *  - delete the event document itself
      */
     private void removeEvent(EventAdminAdapter.Row row, int position) {
         if (row == null || row.id == null) return;
+
+        String eventId = row.id;
 
         // Reference to the event document
         DocumentReference eventRef = db.collection("events").document(row.id);
@@ -157,6 +160,27 @@ public class AdminAllEventsActivity extends AppCompatActivity {
                         }
                     });
         }
+
+        // delete any notifications from the event to be deleted
+        db.collection("users")
+                .get()
+                .addOnSuccessListener(usersSnap -> {
+                    for (DocumentSnapshot userDoc : usersSnap.getDocuments()) {
+                        String uid = userDoc.getId();
+
+                        db.collection("users")
+                                .document(uid)
+                                .collection("notifications")
+                                .whereEqualTo("eventId", eventId)
+                                .get()
+                                .addOnSuccessListener(notifSnap -> {
+                                    for (DocumentSnapshot notifDoc : notifSnap.getDocuments()) {
+                                        notifDoc.getReference().delete();
+                                    }
+                                });
+                    }
+                });
+
 
         // Now delete the event document itself
         eventRef.delete()
