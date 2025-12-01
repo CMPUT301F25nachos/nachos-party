@@ -165,7 +165,9 @@ public class DashboardFragment extends Fragment {
 
     /**
      * Applies the selected filter to the list of user events and updates the RecyclerView.
-     * @param filter The filter string to apply.
+     * Filter options: All, Created (events user organized), Joined (events user joined),
+     * Ongoing (registration open), Past (registration closed), Future (registration upcoming).
+     * @param filter The filter string to apply
      */
     private void applyFilter(String filter) {
         List<Event> allUserEvents = dashboardViewModel.getEvents().getValue();

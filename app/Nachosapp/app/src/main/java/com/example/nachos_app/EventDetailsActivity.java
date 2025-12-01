@@ -34,8 +34,15 @@ import java.util.Map;
 
 /**
  * Main activity for viewing event details. Provides different views based on
- * user role (organizer vs entrant). Organizers see management controls and
- * statistics, while entrants see the join/leave waitlist button.
+ * user role (organizer vs entrant).
+ * Organizers see:
+ * - Management controls (update banner, draw lottery, draw replacements)
+ * - Statistics (waitlist, selected, enrolled, cancelled counts)
+ * - Navigation buttons to view each entrant list
+ * Entrants see:
+ * - Event details and join/leave waitlist button
+ * - Selection status and accept/decline buttons if selected
+ * - Real-time updates via Firestore listeners
  */
 public class EventDetailsActivity extends AppCompatActivity {
     // Entrant views
@@ -138,6 +145,12 @@ public class EventDetailsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Initializes all view references from the layout.
+     * Includes both entrant views (banner, title, join button, selection UI)
+     * and organizer views (statistics, management buttons).
+     * Sets initial visibility states and click listeners.
+     */
     private void initViews() {
         // Entrant views
         bannerImage = findViewById(R.id.eventBannerImageView);
@@ -189,6 +202,11 @@ public class EventDetailsActivity extends AppCompatActivity {
         setupOrganizerButtons();
     }
 
+    /**
+     * Sets up click listeners for all organizer management buttons.
+     * Buttons navigate to: update banner, view lists, draw lottery, draw replacements.
+     * Passes event ID and name to launched activities.
+     */
     private void setupOrganizerButtons() {
         updateBannerButton.setOnClickListener(v -> {openBannerPicker();});
 
@@ -305,6 +323,12 @@ public class EventDetailsActivity extends AppCompatActivity {
                 );
     }
 
+    /**
+     * Populates all UI elements with event data.
+     * Sets text for: title, organizer, description, date, spots, location, registration period.
+     * Loads banner image from base64 string.
+     * @param event The event object containing data to display
+     */
     private void populateUI(Event event) {
         titleText.setText(event.getEventName());
 
@@ -376,6 +400,11 @@ public class EventDetailsActivity extends AppCompatActivity {
         updateCounts();
     }
 
+    /**
+     * Updates the entrant count displays for organizers.
+     * Fetches counts from Firestore subcollections: waitlist, selected, enrolled, cancelled.
+     * Updates both the statistics text and button labels with current counts.
+     */
     private void updateCounts() {
         // Waiting count
         eventRef.collection("waitlist")
@@ -414,6 +443,11 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Loads and displays the current waitlist count for entrants.
+     * Shows the count in the "Waitlist" section of the event details.
+     * Hides the display if fetch fails.
+     */
     private void loadEntrantWaitlistCount() {
         if (eventRef == null || entrantWaitlistCountText == null) {
             return;
@@ -462,6 +496,11 @@ public class EventDetailsActivity extends AppCompatActivity {
         registrationPeriodText.setText(text);
     }
 
+    /**
+     * Sets up a real-time listener to monitor the user's waitlist status.
+     * Updates isOnWaitlist flag and join button state when status changes.
+     * Listener remains active until activity is destroyed.
+     */
     private void checkWaitlist() {
         if (waitListRef == null) return;
 
@@ -472,6 +511,11 @@ public class EventDetailsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Sets up a real-time listener to monitor if the user has been selected.
+     * Updates isSelected flag and shows/hides selection action UI accordingly.
+     * Removes previous listener if it exists before creating new one.
+     */
     private void checkSelectedStatus() {
         if (eventRef == null) {
             return;
@@ -540,11 +584,24 @@ public class EventDetailsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Enables or disables the selection response buttons (confirm/decline).
+     * Used to prevent multiple clicks while processing a response.
+     * @param enabled true to enable buttons, false to disable
+     */
     private void setSelectionButtonsEnabled(boolean enabled) {
         confirmSelectionButton.setEnabled(enabled);
         declineSelectionButton.setEnabled(enabled);
     }
 
+    /**
+     * Handles user's response to being selected for the event.
+     * If accepting: moves user from selected to enrolled collection.
+     * If declining: moves user from selected to cancelled collection with reason "declined".
+     * Uses Firestore batch writes to ensure atomic operations.
+     * Updates UI and local state upon completion.
+     * @param accept true to accept invitation, false to decline
+     */
     private void respondToSelection(boolean accept) {
         if (!isSelected) {
             toast("Invitation unavailable");
@@ -848,6 +905,10 @@ public class EventDetailsActivity extends AppCompatActivity {
         return (val == null) ? def : val;
     }
 
+    /**
+     * Helper method to show a short toast message.
+     * @param msg The message to display
+     */
     private void toast(String msg) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }

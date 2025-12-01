@@ -56,8 +56,10 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
     /**
      * Binds event data to the ViewHolder.
-     * Sets event name, date range, registration status, and banner image.
-     * Dims items with closed or upcoming registration.
+     * Sets event name, organizer name, date, registration status, remaining spots, and banner image.
+     * Displays user participation status badge if applicable.
+     * Dims items with closed or upcoming registration (alpha 0.4).
+     * Sets click listener to navigate to EventDetailsActivity.
      * @param holder The ViewHolder to bind data to
      * @param position Position in the data list
      */
