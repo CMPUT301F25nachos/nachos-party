@@ -316,9 +316,9 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         String organizerName = event.getOrganizerName();
         if (organizerName != null && !organizerName.trim().isEmpty()) {
-            organizerText.setText("Organizer: " + organizerName);
+            organizerText.setText("Organizer\n" + organizerName);
         } else {
-            organizerText.setText("Organizer: Unknown");
+            organizerText.setText("Organizer\nUnknown");
         }
 
         descriptionText.setText(event.getDescription());
@@ -327,19 +327,19 @@ public class EventDetailsActivity extends AppCompatActivity {
         Date eventDate = event.getEventDate();
         if (eventDate != null) {
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-            dateText.setText("Event Date: " + dateFormat.format(eventDate));
+            dateText.setText("Event Date\n " + dateFormat.format(eventDate));
         } else {
-            dateText.setText("Event Date: TBA");
+            dateText.setText("Event Date\n"  + "TBA");
         }
 
         Integer maxParticipants = event.getMaxParticipants();
-        spotsText.setText("Total spots: " +
+        spotsText.setText("Total spots\n" +
                 (maxParticipants != null ? maxParticipants : "Unlimited"));
 
         // Display location if available
         String eventLocation = event.getEventLocation();
         if (eventLocation != null && !eventLocation.trim().isEmpty()) {
-            locationText.setText("Location: " + eventLocation);
+            locationText.setText("Location\n" + eventLocation);
             locationText.setVisibility(View.VISIBLE);
         } else {
             locationText.setVisibility(View.GONE);
@@ -360,7 +360,6 @@ public class EventDetailsActivity extends AppCompatActivity {
      * - Count statistics (waiting, selected, enrolled, cancelled)
      * - Navigation buttons to view each list
      * - Draw lottery button
-     * - Send notification button
      */
     private void showOrganizerView(Event event) {
         // Hide join button for organizers
@@ -430,7 +429,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     int count = querySnapshot.size();
-                    entrantWaitlistCountText.setText("Waitlist: " + count + " entrants");
+                    entrantWaitlistCountText.setText("Waitlist\n" + count + " entrants");
                     entrantWaitlistCountText.setVisibility(View.VISIBLE);
                 })
                 .addOnFailureListener(e -> entrantWaitlistCountText.setVisibility(View.GONE));
@@ -464,7 +463,7 @@ public class EventDetailsActivity extends AppCompatActivity {
      */
     private void setRegistrationText(Date start, Date end) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-        String text = "Registration: " + dateFormat.format(start)
+        String text = "Registration\n" + dateFormat.format(start)
                 + " - " + dateFormat.format(end);
         registrationPeriodText.setText(text);
     }
