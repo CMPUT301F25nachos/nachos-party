@@ -151,6 +151,7 @@ public class DashboardViewModel extends ViewModel {
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot.exists()) {
+                        event.setUserParticipationStatus("WAITLISTED");
                         userEvents.add(event);
                         userEventIds.add(eventId);
                         onComplete.run();
@@ -161,6 +162,7 @@ public class DashboardViewModel extends ViewModel {
                             .get()
                             .addOnSuccessListener(selectedSnapshot -> {
                                 if (selectedSnapshot.exists()) {
+                                    event.setUserParticipationStatus("SELECTED");
                                     userEvents.add(event);
                                     userEventIds.add(eventId);
                                     onComplete.run();
@@ -171,6 +173,7 @@ public class DashboardViewModel extends ViewModel {
                                         .get()
                                         .addOnSuccessListener(enrolledSnapshot -> {
                                             if (enrolledSnapshot.exists()) {
+                                                event.setUserParticipationStatus("ENROLLED");
                                                 userEvents.add(event);
                                                 userEventIds.add(eventId);
                                                 onComplete.run();
@@ -181,6 +184,12 @@ public class DashboardViewModel extends ViewModel {
                                                     .get()
                                                     .addOnSuccessListener(cancelledSnapshot -> {
                                                         if (cancelledSnapshot.exists()) {
+                                                            String reason = cancelledSnapshot.getString("reason");
+                                                            if ("declined".equals(reason)) {
+                                                                event.setUserParticipationStatus("DECLINED");
+                                                            } else {
+                                                                event.setUserParticipationStatus("CANCELLED");
+                                                            }
                                                             userEvents.add(event);
                                                             userEventIds.add(eventId);
                                                         }

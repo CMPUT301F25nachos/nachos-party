@@ -7,73 +7,97 @@
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="wrap_content">
 
-        <!-- Event Banner -->
-        <ImageView
-            android:id="@+id/eventBannerImageView"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:background="#E0E0E0"
-            android:contentDescription="Event banner"/>
-
-        <!-- Event Info -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/eventNameTextView"
-                android:layout_width="wrap_content"
+            <!-- Event Banner -->
+            <ImageView
+                android:id="@+id/eventBannerImageView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:scaleType="centerCrop"
+                android:background="#E0E0E0"
+                android:contentDescription="Event banner"/>
+
+            <!-- Event Info -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Event 1"
-                android:textColor="#000000"
-                android:textSize="18sp"
-                android:textStyle="bold"/>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <TextView
-                android:id="@+id/eventOrganizerTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Organized by John Doe"
-                android:textColor="#000000"
-                android:textSize="13sp"
-                android:layout_marginTop="4dp"/>
+                <TextView
+                    android:id="@+id/eventNameTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Event 1"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
+                    android:textStyle="bold"/>
 
-            <TextView
-                android:id="@+id/eventDateTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Event date: Sep 5, 2025"
-                android:textColor="#000000"
-                android:textSize="13sp"
-                android:layout_marginTop="4dp"/>
+                <TextView
+                    android:id="@+id/eventOrganizerTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Organized by John Doe"
+                    android:textColor="#000000"
+                    android:textSize="13sp"
+                    android:layout_marginTop="4dp"/>
 
-            <TextView
-                android:id="@+id/eventSpotsTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="15 spots remaining!"
-                android:textColor="#2E7D32"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"/>
+                <TextView
+                    android:id="@+id/eventDateTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Event date: Sep 5, 2025"
+                    android:textColor="#000000"
+                    android:textSize="13sp"
+                    android:layout_marginTop="4dp"/>
 
-            <TextView
-                android:id="@+id/eventRegistrationTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Registration closes on Dec 31, 2025"
-                android:textColor="#666666"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp"/>
+                <TextView
+                    android:id="@+id/eventSpotsTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15 spots remaining!"
+                    android:textColor="#2E7D32"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp"/>
 
+                <TextView
+                    android:id="@+id/eventRegistrationTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Registration closes on Dec 31, 2025"
+                    android:textColor="#666666"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp"/>
+
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
+
+        <!-- Status Badge (positioned over the banner) -->
+        <TextView
+            android:id="@+id/eventStatusBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="12dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:background="@drawable/status_badge_background"
+            android:elevation="2dp"
+            android:visibility="gone"/>
+
+    </FrameLayout>
 </androidx.cardview.widget.CardView>

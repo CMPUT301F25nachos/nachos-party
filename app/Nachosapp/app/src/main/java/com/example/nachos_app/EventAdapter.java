@@ -3,6 +3,7 @@ package com.example.nachos_app;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -85,6 +86,38 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.dateTimeTextView.setVisibility(View.VISIBLE);
         }
 
+        // Handle status badge
+        String userStatus = event.getUserParticipationStatus();
+        if (userStatus != null && !userStatus.isEmpty() && !userStatus.equalsIgnoreCase("ORGANIZER")) {
+            holder.statusBadge.setVisibility(View.VISIBLE);
+            holder.statusBadge.setText(userStatus);
+
+            // Set color based on status
+            GradientDrawable background = (GradientDrawable) holder.statusBadge.getBackground();
+            switch (userStatus.toLowerCase()) {
+                case "enrolled":
+                    background.setColor(Color.parseColor("#4CAF50")); // Green
+                    break;
+                case "selected":
+                    background.setColor(Color.parseColor("#FF9800")); // Orange
+                    break;
+                case "waitlisted":
+                    background.setColor(Color.parseColor("#2196F3")); // Blue
+                    break;
+                case "cancelled":
+                    background.setColor(Color.parseColor("#757575")); // Gray
+                    break;
+                case "declined":
+                    background.setColor(Color.parseColor("#9E9E9E")); // Lighter Gray
+                    break;
+                default:
+                    background.setColor(Color.parseColor("#2196F3")); // Default blue
+                    break;
+            }
+        } else {
+            holder.statusBadge.setVisibility(View.GONE);
+        }
+
         boolean registrationOpen = event.isRegistrationOpen();
         boolean registrationUpcoming = event.isRegistrationUpcoming();
 
@@ -139,6 +172,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         TextView dateTimeTextView;
         TextView spotsTextView;
         TextView registrationTextView;
+        TextView statusBadge;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -148,6 +182,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             dateTimeTextView = itemView.findViewById(R.id.eventDateTextView);
             spotsTextView = itemView.findViewById(R.id.eventSpotsTextView);
             registrationTextView = itemView.findViewById(R.id.eventRegistrationTextView);
+            statusBadge = itemView.findViewById(R.id.eventStatusBadge);
         }
     }
 }

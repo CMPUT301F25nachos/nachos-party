@@ -23,6 +23,7 @@ public class Event {
     private String qrCodeData; // The actual data encoded in QR (event link)
     private Date createdAt;
     private int currentWaitlistCount; // Track how many people joined
+    private transient String userParticipationStatus; // Not stored in Firestore
 
     public Event() {} // Required for Firestore
 
@@ -81,6 +82,7 @@ public class Event {
     public Date getCreatedAt() { return createdAt; }
     public int getCurrentWaitlistCount() { return currentWaitlistCount; }
     public String getEventLocation() { return eventLocation; }
+    public String getUserParticipationStatus() { return userParticipationStatus; }
 
     public void setOrganizerId(String organizerId) { this.organizerId = organizerId; }
     public void setOrganizerName(String organizerName) { this.organizerName = organizerName; }
@@ -97,6 +99,7 @@ public class Event {
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
     public void setCurrentWaitlistCount(int currentWaitlistCount) { this.currentWaitlistCount = currentWaitlistCount; }
     public void setEventLocation(String eventLocation) { this.eventLocation = eventLocation; }
+    public void setUserParticipationStatus(String status) { this.userParticipationStatus = status; }
 
     /**
      * Checks if the waitlist has reached its maximum capacity.
