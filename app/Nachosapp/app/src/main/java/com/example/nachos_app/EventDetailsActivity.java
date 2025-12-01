@@ -53,6 +53,8 @@ public class EventDetailsActivity extends AppCompatActivity {
     private TextView selectionStatusMessage;
     private Button confirmSelectionButton;
     private Button declineSelectionButton;
+    private TextView entrantWaitlistCountText;
+    private TextView waitlistNoticeText;
 
     // Organizer views
     private View organizerSection;
@@ -147,6 +149,8 @@ public class EventDetailsActivity extends AppCompatActivity {
         organizerText = findViewById(R.id.eventOrganizerTextView);
         registrationPeriodText = findViewById(R.id.eventDrawPeriodTextView);
         descriptionText = findViewById(R.id.eventDescriptionTextView);
+        entrantWaitlistCountText = findViewById(R.id.entrantWaitlistCountTextView);
+        waitlistNoticeText = findViewById(R.id.waitlistNoticeTextView);
         joinButton = findViewById(R.id.joinWaitlistButton);
         showQRCodeButton = findViewById(R.id.showQRCodeButton);
         selectionActionContainer = findViewById(R.id.selectionActionContainer);
@@ -291,6 +295,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     isOrganizer = event.getOrganizerId().equals(uid);
 
                     populateUI(event);
+                    loadEntrantWaitlistCount();
 
                     if (isOrganizer) {
                         showOrganizerView(event);
@@ -416,6 +421,21 @@ public class EventDetailsActivity extends AppCompatActivity {
                 });
     }
 
+    private void loadEntrantWaitlistCount() {
+        if (eventRef == null || entrantWaitlistCountText == null) {
+            return;
+        }
+
+        eventRef.collection("waitlist")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int count = querySnapshot.size();
+                    entrantWaitlistCountText.setText("Waitlist: " + count + " entrants");
+                    entrantWaitlistCountText.setVisibility(View.VISIBLE);
+                })
+                .addOnFailureListener(e -> entrantWaitlistCountText.setVisibility(View.GONE));
+    }
+
     /**
      * Displays the entrant view with join/leave waitlist button.
      * Sets up real-time listener for waitlist status changes.
@@ -508,10 +528,12 @@ public class EventDetailsActivity extends AppCompatActivity {
         // Not selected - hide selection UI
         selectionActionContainer.setVisibility(View.GONE);
         joinButton.setVisibility(View.VISIBLE);
+        waitlistNoticeText.setVisibility(View.GONE);
 
         if (isOnWaitlist) {
             joinButton.setText("Leave waitlist");
             joinButton.setEnabled(true);
+            waitlistNoticeText.setVisibility(View.VISIBLE);
         } else if (!registrationOpen) {
             if (registrationUpcoming) {
                 joinButton.setText("Registration not open yet");
@@ -681,6 +703,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     .addOnSuccessListener(aVoid -> {
                         eventRef.update("currentWaitlistCount", currentWaitlistCount + 1);
                         toast("You have joined this waitlist");
+                        loadEntrantWaitlistCount();
                         joinButton.setEnabled(true);
                     })
                     .addOnFailureListener(err -> {
@@ -715,6 +738,7 @@ public class EventDetailsActivity extends AppCompatActivity {
                     long newCount = Math.max(0, currentWaitlistCount - 1);
                     eventRef.update("currentWaitlistCount", newCount);
                     toast("Removed from waitlist.");
+                    loadEntrantWaitlistCount();
                     joinButton.setEnabled(true);
 
                 }).addOnFailureListener(err -> {
@@ -859,5 +883,6 @@ public class EventDetailsActivity extends AppCompatActivity {
         if (isOrganizer) {
             updateCounts();
         }
+        loadEntrantWaitlistCount();
     }
 }
