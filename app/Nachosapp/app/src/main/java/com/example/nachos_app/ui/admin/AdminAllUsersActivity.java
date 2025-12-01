@@ -142,7 +142,7 @@ public class AdminAllUsersActivity extends AppCompatActivity {
                 .whereEqualTo("organizerId", userId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-
+                    List<String> organizerEventIds = new ArrayList<>();
                     // For each event they created, delete its subcollections
                     String[] subcollections = new String[] {
                             "waitlist",
@@ -152,6 +152,7 @@ public class AdminAllUsersActivity extends AppCompatActivity {
                     };
 
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        organizerEventIds.add(doc.getId());
                         DocumentReference eventRef = doc.getReference();
                         for (String sub : subcollections) {
                             eventRef.collection(sub)
@@ -164,6 +165,24 @@ public class AdminAllUsersActivity extends AppCompatActivity {
                         }
                     }
 
+                    // Remove notifications for those events which were deleted from all users
+                    if (!organizerEventIds.isEmpty()) {
+                        db.collection("users")
+                                .get()
+                                .addOnSuccessListener(usersSnap -> {
+                                    for (DocumentSnapshot userDoc : usersSnap) {
+                                        String uid = userDoc.getId();
+                                        db.collection("users").document(uid)
+                                                .collection("notifications")
+                                                .whereIn("eventId", organizerEventIds)
+                                                .get()
+                                                .addOnSuccessListener(notifSnap -> {
+                                                    for (DocumentSnapshot n : notifSnap) n.getReference().delete();
+                                                });
+                                    }
+                                });
+                    }
+                    
                     // Then delete those event documents
                     db.runBatch(batch -> {
                         for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
