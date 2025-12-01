@@ -69,5 +69,6 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.2.0")
+    implementation(files("/Users/reonnguyen/Library/Android/sdk/platforms/android-36/android.jar"))
 
 }
