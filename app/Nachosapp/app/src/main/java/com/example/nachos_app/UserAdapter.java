@@ -10,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -17,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -92,77 +94,109 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             holder.detailTextView.setText(getDetailText("Unknown"));
         }
 
-        // Show status if available (for selected list)
-        if (displayMode.equals("selected") && data.containsKey("status")) {
-            String status = (String) data.get("status");
-            holder.statusTextView.setVisibility(View.VISIBLE);
-            holder.statusTextView.setText("Status: " + capitalizeFirst(status));
-        } else {
-            holder.statusTextView.setVisibility(View.GONE);
-        }
-
-        //adds cancel button for any selected, waitlisted
-        if (displayMode.equals("selected") || displayMode.equals("waitlist")){
+        // Show cancel button only for selected and enrolled lists
+        if (displayMode.equals("selected") || displayMode.equals("enrolled")) {
             holder.cancelButton.setVisibility(View.VISIBLE);
             holder.cancelButton.setOnClickListener(v -> cancelEntrant(uid, eventId, displayMode));
-        }
-        else{
+        } else {
             holder.cancelButton.setVisibility(View.GONE);
         }
     }
 
-    private void cancelEntrant(String uid, String eventId, String displayMode){
+    private void cancelEntrant(String uid, String eventId, String displayMode) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        // Remove from current list
-        db.collection("events")
-                .document(eventId)
-                .collection(displayMode) // must be "waitlist" or "selected"
-                .document(uid)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
 
-                    int index = userIds.indexOf(uid);
-                    if (index != -1) {
-                        userIds.remove(index);
-                        userDataList.remove(index);
-                        notifyItemRemoved(index);
-                    }
-                    if (displayMode.equals("waitlist")){
-                        db.collection("events")
-                                .document(eventId)
-                                .update("currentWaitlistCount", FieldValue.increment(-1))
-                                .addOnFailureListener(e -> {
-                                    Toast.makeText(context,
-                                    "Failed to update waitlist count: " + e.getMessage(),
-                                        Toast.LENGTH_SHORT).show();
-                                });
-                    }
-                    // Add to cancelled list
-                    Map<String, Object> cancelledData = new HashMap<>();
-                    cancelledData.put("uid", uid);
-                    cancelledData.put("cancelledAt", FieldValue.serverTimestamp());
-                    cancelledData.put("reason", "Manually Cancelled");
+        // Determine the reason based on where they're being cancelled from
+        String reason;
+        if (displayMode.equals("selected")) {
+            reason = "manually_cancelled";
+        } else if (displayMode.equals("enrolled")) {
+            reason = "dropped_out";
+        } else {
+            Toast.makeText(context, "Invalid cancellation", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-
-                    db.collection("events")
-                            .document(eventId)
-                            .collection("cancelled")
-                            .document(uid)
-                            .set(cancelledData)
-                            .addOnSuccessListener(done -> {
-                                deleteSelectionNotification(uid, eventId);
-                                Toast.makeText(context, "Entrant cancelled", Toast.LENGTH_SHORT).show();
-                            })
-                            .addOnFailureListener(e ->
-                                    Toast.makeText(context, "Failed to cancel entrant: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                            );
-
+        // Show confirmation dialog
+        new AlertDialog.Builder(context)
+                .setTitle("Confirm Cancellation")
+                .setMessage("Are you sure you want to cancel this entrant?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    performCancellation(uid, eventId, displayMode, reason);
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(context, "Failed to remove entrant: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
-
+                .setNegativeButton("No", null)
+                .show();
     }
+
+    private void performCancellation(String uid, String eventId, String displayMode, String reason) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference sourceRef = db.collection("events")
+                .document(eventId)
+                .collection(displayMode)
+                .document(uid);
+
+        // Get the source document first to preserve data
+        sourceRef.get().addOnSuccessListener(sourceSnapshot -> {
+            if (!sourceSnapshot.exists()) {
+                Toast.makeText(context, "Entrant not found", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            WriteBatch batch = db.batch();
+
+            // Add to cancelled collection with preserved data
+            Map<String, Object> cancelledData = new HashMap<>();
+            cancelledData.put("uid", uid);
+            cancelledData.put("cancelledAt", FieldValue.serverTimestamp());
+            cancelledData.put("reason", reason);
+
+            // Preserve historical data
+            if (sourceSnapshot.contains("joinedAt")) {
+                cancelledData.put("joinedAt", sourceSnapshot.get("joinedAt"));
+            }
+            if (sourceSnapshot.contains("selectedAt")) {
+                cancelledData.put("selectedAt", sourceSnapshot.get("selectedAt"));
+            }
+            if (sourceSnapshot.contains("enrolledAt")) {
+                cancelledData.put("enrolledAt", sourceSnapshot.get("enrolledAt"));
+            }
+
+            DocumentReference cancelledRef = db.collection("events")
+                    .document(eventId)
+                    .collection("cancelled")
+                    .document(uid);
+            batch.set(cancelledRef, cancelledData);
+
+            // Remove from source collection
+            batch.delete(sourceRef);
+
+            batch.commit()
+                    .addOnSuccessListener(aVoid -> {
+                        // Remove from local list
+                        int index = userIds.indexOf(uid);
+                        if (index != -1) {
+                            userIds.remove(index);
+                            userDataList.remove(index);
+                            notifyItemRemoved(index);
+                        }
+
+                        // Delete selection notification if cancelling from selected
+                        if (displayMode.equals("selected")) {
+                            deleteSelectionNotification(uid, eventId);
+                        }
+
+                        Toast.makeText(context, "Entrant cancelled", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(context, "Failed to cancel entrant: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    });
+        }).addOnFailureListener(e -> {
+            Toast.makeText(context, "Failed to load entrant data: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+        });
+    }
+
     private void deleteSelectionNotification(String uid, String eventId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -170,7 +204,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 .document(uid)
                 .collection("notifications")
                 .whereEqualTo("eventId", eventId)
-                .whereEqualTo("type", "selected") // optional, if you use this
+                .whereEqualTo("type", "selected")
                 .get()
                 .addOnSuccessListener(query -> {
                     for (DocumentSnapshot doc : query) {

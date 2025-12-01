@@ -78,34 +78,26 @@ public class DrawReplacementActivity extends AppCompatActivity {
             notifSender = new NotificationSender(eventId, eventName, db);
         }
 
-        // Count declined in selected collection
+        // Count all cancelled entries (these are the available replacement slots)
         db.collection("events")
                 .document(eventId)
-                .collection("selected")
-                .whereEqualTo("status", "declined")
+                .collection("cancelled")
                 .get()
-                .addOnSuccessListener(declinedSnapshot -> {
-                    int declinedCount = declinedSnapshot.size();
+                .addOnSuccessListener(cancelledSnapshot -> {
+                    availableSlots = cancelledSnapshot.size();
 
-                    // Count cancelled collection
-                    db.collection("events")
-                            .document(eventId)
-                            .collection("cancelled")
-                            .get()
-                            .addOnSuccessListener(cancelledSnapshot -> {
-                                int cancelledCount = cancelledSnapshot.size();
-                                availableSlots = declinedCount + cancelledCount;
+                    availableSlotsText.setText("Available replacement slots: " + availableSlots);
 
-                                availableSlotsText.setText("Available replacement slots: " + availableSlots);
+                    if (availableSlots == 0) {
+                        Toast.makeText(this, "No replacement slots available", Toast.LENGTH_SHORT).show();
+                        drawButton.setEnabled(false);
+                    }
 
-                                if (availableSlots == 0) {
-                                    Toast.makeText(this, "No replacement slots available", Toast.LENGTH_SHORT).show();
-                                    drawButton.setEnabled(false);
-                                }
-
-                                // Now load waitlist count
-                                loadWaitlistCount();
-                            });
+                    loadWaitlistCount();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load data: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -213,7 +205,6 @@ public class DrawReplacementActivity extends AppCompatActivity {
             selectedData.put("uid", uid);
             selectedData.put("joinedAt", doc.get("joinedAt"));
             selectedData.put("selectedAt", FieldValue.serverTimestamp());
-            selectedData.put("status", "pending");
 
             batch.set(db.collection("events")
                     .document(eventId)

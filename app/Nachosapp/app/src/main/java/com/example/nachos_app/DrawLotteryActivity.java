@@ -234,7 +234,6 @@ public class DrawLotteryActivity extends AppCompatActivity {
             selectedData.put("uid", uid);
             selectedData.put("joinedAt", doc.get("joinedAt"));
             selectedData.put("selectedAt", FieldValue.serverTimestamp());
-            selectedData.put("status", "pending"); // pending, accepted, declined
 
             batch.set(db.collection("events")
                     .document(eventId)
