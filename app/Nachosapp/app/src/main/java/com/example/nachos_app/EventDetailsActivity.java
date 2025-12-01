@@ -65,6 +65,7 @@ public class EventDetailsActivity extends AppCompatActivity {
     private Button viewSelectedButton;
     private Button viewCancelledButton;
     private Button drawLotteryButton;
+    private Button drawReplacementButton;
     private Button sendNotificationButton;
     private View organizerDivider;
     private ActivityResultLauncher<Intent> updateBannerLauncher;
@@ -166,6 +167,7 @@ public class EventDetailsActivity extends AppCompatActivity {
         viewSelectedButton = findViewById(R.id.viewSelectedButton);
         viewCancelledButton = findViewById(R.id.viewCancelledButton);
         drawLotteryButton = findViewById(R.id.drawLotteryButton);
+        drawReplacementButton = findViewById(R.id.drawReplacementButton);
         sendNotificationButton = findViewById(R.id.sendNotificationButton);
 
         // Initialize visibility - hide organizer section initially
@@ -220,6 +222,13 @@ public class EventDetailsActivity extends AppCompatActivity {
 
         drawLotteryButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, DrawLotteryActivity.class);
+            intent.putExtra("eventId", eventId);
+            intent.putExtra("eventName", currentEvent.getEventName());
+            startActivity(intent);
+        });
+
+        drawReplacementButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, DrawReplacementActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
