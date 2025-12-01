@@ -211,6 +211,7 @@ public class DashboardFragment extends Fragment {
         binding = null;
     }
 
+
     @Override
     public void onResume() {
         super.onResume();

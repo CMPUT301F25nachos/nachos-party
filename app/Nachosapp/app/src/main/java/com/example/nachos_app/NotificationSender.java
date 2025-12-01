@@ -18,6 +18,8 @@ public class NotificationSender {
     private String eventId;
     private String eventName;
     private FirebaseFirestore db;
+    private List<String> uids;
+    private String type;
 
     /**
      * Creates a new notification sender to use in sending notifications
@@ -109,4 +111,45 @@ public class NotificationSender {
     public void setEventName(String eventName) {
         this.eventName = eventName;
     }
+
+    public void setUserIds(List<String> uids) {
+        this.uids = uids;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    // Sends notifications to the selected, cancelled, or waiting lists
+    // Does not send notifications to users who have opted out of them
+
+    /**
+     * US 02.07.01, US 02.07.02, US 02.07.03
+     * Sends notifications to the selected, cancelled or waiting lists.
+     * Before calling this method one needs to call setUserIds and setType on their NotificationSender
+     * Respects notification preferences defined by the user
+     * @param message Custom text to send to the user
+     */
+    public void sendListNotifications(String message) {
+        if (uids == null && type == null) return;
+        for (String uid : uids) {
+            db.collection("users").document(uid).get().addOnSuccessListener(userSnap -> {
+                if (userSnap.exists()) {
+                    String pref = userSnap.getString("notificationPreference");
+                    // Checks user notification preferences before sending notif
+                    if (pref == null || "yes".equalsIgnoreCase(pref)) {
+                        Map<String, Object> notif = new HashMap<>();
+                        notif.put("uid", uid);
+                        notif.put("eventId", eventId);
+                        notif.put("sendTime", new Date());
+                        notif.put("type", type);
+                        notif.put("message", eventName + ": " + message);
+
+                        db.collection("users").document(uid).collection("notifications").add(notif);
+                    }
+                }
+            });
+        }
+    }
+
 }

@@ -20,4 +20,5 @@
     <string name="selection_decline_button">Decline</string>
     <string name="selection_confirmed_message">You\'re confirmed for this event.</string>
     <string name="selection_declined_message">You declined this invitation.</string>
+    <string name="waitlist_notice">Selection is by random lottery. If selected you\'ll receive an in-app notification, so keep an eye on your notifications!</string>
 </resources>
