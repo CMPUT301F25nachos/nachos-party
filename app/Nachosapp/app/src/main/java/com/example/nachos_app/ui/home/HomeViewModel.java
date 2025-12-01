@@ -50,11 +50,12 @@ public class HomeViewModel extends ViewModel {
     }
 
     /**
-     * Loads all events from Firestore and filters them for display.
+     * Loads all events from Firestore and filters them for display on home screen.
      * Shows events with:
-     * - Open registration that are not full
-     * - Upcoming registration
+     * - Open registration that are not full (not at max waitlist capacity)
+     * - Upcoming registration (not yet started)
      * Orders results by creation date (newest first).
+     * Open events are displayed before upcoming events.
      */
     public void loadEvents() {
         mLoading.setValue(true);

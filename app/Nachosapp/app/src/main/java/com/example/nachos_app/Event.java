@@ -6,6 +6,8 @@ import java.util.Date;
  * Model class representing an event in the lottery system.
  * This class stores all event-related information including registration periods,
  * participant limits, and QR code data.
+ * The userParticipationStatus field is transient and not stored in Firestore,
+ * used only for UI display purposes.
  */
 public class Event {
     private String organizerId; // Device ID from Firebase Auth

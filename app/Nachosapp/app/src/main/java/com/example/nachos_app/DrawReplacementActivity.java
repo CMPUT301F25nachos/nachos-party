@@ -23,6 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Activity for drawing replacement entrants from the waitlist.
+ * When selected entrants decline or are cancelled, this activity allows organizers
+ * to randomly select replacements from the remaining waitlist.
+ * Only considers cancelled slots where replacementFilled is false.
+ * Uses NotificationSender to notify newly selected replacements.
+ */
 public class DrawReplacementActivity extends AppCompatActivity {
 
     private TextView eventNameText;
@@ -62,6 +69,10 @@ public class DrawReplacementActivity extends AppCompatActivity {
         loadData();
     }
 
+    /**
+     * Initializes view references and sets up click listeners.
+     * Binds UI elements for event info, slot counts, and draw button.
+     */
     private void initViews() {
         eventNameText = findViewById(R.id.eventNameText);
         availableSlotsText = findViewById(R.id.availableSlotsText);
@@ -73,6 +84,11 @@ public class DrawReplacementActivity extends AppCompatActivity {
         drawButton.setOnClickListener(v -> performDraw());
     }
 
+    /**
+     * Loads available replacement slots and waitlist count from Firestore.
+     * Counts only cancelled entries where replacementFilled is false.
+     * Disables draw button if no slots or no waitlist entrants available.
+     */
     private void loadData() {
         if (notifSender == null) {
             notifSender = new NotificationSender(eventId, eventName, db);
@@ -102,6 +118,11 @@ public class DrawReplacementActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Loads the current waitlist count from Firestore.
+     * Updates UI and disables draw button if waitlist is empty.
+     * Sets input hint based on minimum of available slots and waitlist size.
+     */
     private void loadWaitlistCount() {
         db.collection("events")
                 .document(eventId)
@@ -122,6 +143,11 @@ public class DrawReplacementActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Validates user input for number of replacements to draw.
+     * Checks that number is positive and doesn't exceed available slots or waitlist size.
+     * Shows confirmation dialog before executing the draw.
+     */
     private void performDraw() {
         String input = numberOfReplacementsInput.getText().toString().trim();
 
@@ -159,6 +185,12 @@ public class DrawReplacementActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * Executes the replacement draw by fetching waitlist entrants,
+     * randomly shuffling them, and selecting the specified number.
+     * Calls moveToSelected to complete the operation.
+     * @param numReplacements Number of replacement entrants to select
+     */
     private void executeDraw(int numReplacements) {
         drawButton.setEnabled(false);
         Toast.makeText(this, "Drawing replacements...", Toast.LENGTH_SHORT).show();
@@ -195,6 +227,15 @@ public class DrawReplacementActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Moves replacement entrants from waitlist to selected collection.
+     * Uses a Firestore batch to:
+     * 1. Add entrants to selected collection
+     * 2. Remove from waitlist collection
+     * 3. Mark cancelled slots as filled (replacementFilled = true)
+     * Updates waitlist count and sends notifications upon success.
+     * @param replacements List of selected replacement entrants
+     */
     private void moveToSelected(List<DocumentSnapshot> replacements) {
         // Fetch the cancelled slots to mark as filled
         db.collection("events")

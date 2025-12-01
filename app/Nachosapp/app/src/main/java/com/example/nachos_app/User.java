@@ -18,7 +18,7 @@ public class User {
 
     /**
      * Constructs a new User with the specified details.
-     * Notification preference defaults to "yes".
+     * Notification preference defaults to "yes" for new users.
      * @param name user's full name
      * @param email user's email address
      * @param phoneNumber user's phone number (optional, can be null)

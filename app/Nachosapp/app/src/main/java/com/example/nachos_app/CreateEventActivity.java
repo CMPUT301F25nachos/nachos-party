@@ -195,6 +195,10 @@ public class CreateEventActivity extends AppCompatActivity {
         datePickerDialog.show();
     }
 
+    /**
+     * Opens the system image picker to allow user to select a banner image.
+     * Result is handled by imagePickerLauncher.
+     */
     private void openImagePicker() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");
@@ -282,6 +286,15 @@ public class CreateEventActivity extends AppCompatActivity {
         createEvent(eventName, description, maxParticipants, eventLocation);
     }
 
+    /**
+     * Creates a new event in Firestore with the provided details.
+     * Fetches the organizer's name from the users collection, then either processes
+     * the banner image (if provided) or saves the event directly.
+     * @param eventName name of the event
+     * @param description event description
+     * @param maxParticipants Maximum number of participants (null for unlimited)
+     * @param eventLocation optional event location
+     */
     private void createEvent(String eventName, String description, Integer maxParticipants, String eventLocation) {
         String eventId = db.collection("events").document().getId();
         String organizerId = currentUser.getUid();
@@ -310,6 +323,7 @@ public class CreateEventActivity extends AppCompatActivity {
      * Processes the selected banner image by resizing and compressing it.
      * Limits image size to prevent Firestore document size issues (1MB limit).
      * Max width: 800px, max height: 600px, JPEG quality: 70%, Max size: 500KB
+     * Converts the image to base64 string format for storage in Firestore.
      * @param eventId ID of the event being created
      * @param eventName name of the event
      * @param description event description
@@ -491,6 +505,10 @@ public class CreateEventActivity extends AppCompatActivity {
         return bitmap;
     }
 
+    /**
+     * Resets the create button to its default state (enabled with original text).
+     * Called after errors or completion of event creation.
+     */
     private void resetCreateButton() {
         createEventButton.setEnabled(true);
         createEventButton.setText("Create Event");

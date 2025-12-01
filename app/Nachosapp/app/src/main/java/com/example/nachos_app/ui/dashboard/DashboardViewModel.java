@@ -17,6 +17,7 @@ import java.util.List;
  * ViewModel for the Dashboard Fragment.
  * Manages loading and filtering of events relevant to the current user.
  * Filters events based on user participation status (organizer, waitlist, selected, enrolled, cancelled).
+ * Uses Firestore to fetch all events and check user's involvement in each one.
  */
 public class DashboardViewModel extends ViewModel {
     private final MutableLiveData<List<Event>> mEvents;

@@ -156,6 +156,12 @@ public class HomeFragment extends Fragment {
         applyFilter(currentFilter);
     }
 
+    /**
+     * Applies the selected filter to the events list.
+     * Filters events based on registration status: All, Ongoing (open), or Future (upcoming).
+     * Updates the RecyclerView with filtered results.
+     * @param filter The filter to apply ("All", "Ongoing", or "Future")
+     */
     private void applyFilter(String filter) {
         List<Event> filteredEvents = new ArrayList<>();
         List<String> filteredIds = new ArrayList<>();

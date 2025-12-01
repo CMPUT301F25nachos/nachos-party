@@ -133,6 +133,11 @@ public class EntrantListActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Returns the appropriate title for the given list type.
+     * @param type The list type ("waitlist", "selected", "enrolled", "cancelled")
+     * @return The formatted title string
+     */
     private String getTitle(String type) {
         switch (type) {
             case "waitlist":
@@ -148,6 +153,10 @@ public class EntrantListActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Sets up the RecyclerView with UserAdapter and LinearLayoutManager.
+     * Passes context, list type, and event ID to the adapter.
+     */
     private void setupRecyclerView() {
         recyclerView = findViewById(R.id.entrantListRecyclerView);
         adapter = new UserAdapter(this, listType, eventId);
@@ -203,6 +212,13 @@ public class EntrantListActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Fetches user profile data (names) from Firestore for the given user IDs.
+     * Uses Tasks.whenAllSuccess to fetch all profiles in parallel.
+     * Falls back to displaying user IDs if profile fetch fails.
+     * @param userIds List of user IDs to fetch profiles for
+     * @param userDataList List of user data maps to populate with names
+     */
     private void fetchUserProfiles(List<String> userIds, List<Map<String, Object>> userDataList) {
         if (userIds.isEmpty()) {
             adapter.setUsers(userIds, userDataList);
@@ -235,7 +251,11 @@ public class EntrantListActivity extends AppCompatActivity {
             });
 }
 
-    // Opens the system file dialogue to save a file
+    /**
+     * Launches the system file picker to create a new CSV file.
+     * Called when Export CSV button is clicked for enrolled entrants.
+     * Opens system file dialog with default filename "enrolled-entrants.csv".
+     */
     private void createFile() {
         Intent intent = new Intent(ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);

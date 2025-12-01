@@ -103,6 +103,16 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         }
     }
 
+    /**
+     * Initiates the cancellation process for an entrant.
+     * Determines cancellation reason based on current display mode:
+     * - "manually_cancelled" for selected list
+     * - "dropped_out" for enrolled list
+     * Shows confirmation dialog before proceeding.
+     * @param uid User ID of the entrant to cancel
+     * @param eventId ID of the event
+     * @param displayMode Current list type ("selected" or "enrolled")
+     */
     private void cancelEntrant(String uid, String eventId, String displayMode) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -128,6 +138,19 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 .show();
     }
 
+    /**
+     * Performs the actual cancellation by moving entrant to cancelled collection.
+     * Uses Firestore batch to:
+     * 1. Create document in cancelled collection with reason and timestamps
+     * 2. Delete document from source collection (selected or enrolled)
+     * Preserves all historical timestamps (joinedAt, selectedAt, enrolledAt).
+     * Sets replacementFilled to false to allow drawing replacements.
+     * Deletes selection notification if cancelling from selected list.
+     * @param uid User ID of the entrant
+     * @param eventId ID of the event
+     * @param displayMode Source collection type
+     * @param reason Cancellation reason
+     */
     private void performCancellation(String uid, String eventId, String displayMode, String reason) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference sourceRef = db.collection("events")
@@ -190,6 +213,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         });
     }
 
+    /**
+     * Deletes the selection notification for a user when they are cancelled.
+     * Queries and deletes notifications with type "selected" for this event.
+     * @param uid User ID
+     * @param eventId Event ID
+     */
     private void deleteSelectionNotification(String uid, String eventId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -209,6 +238,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 );
     }
 
+    /**
+     * Returns the display name for a user, preferring their actual name over user ID.
+     * Falls back to truncated user ID if name is not available.
+     * @param uid The user ID
+     * @param data User data map containing potential "name" field
+     * @return Display name string
+     */
     private String getDisplayName(String uid, Map<String, Object> data) {
         Object nameObj = data.get("name");
         if (nameObj instanceof String) {
@@ -262,7 +298,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     /**
      * Capitalizes the first letter of a string.
      * @param str The string to capitalize
-     * @return String with first letter capitalized
+     * @return String with first letter capitalized, or original if null/empty
      */
     private String capitalizeFirst(String str) {
         if (str == null || str.isEmpty()) return str;

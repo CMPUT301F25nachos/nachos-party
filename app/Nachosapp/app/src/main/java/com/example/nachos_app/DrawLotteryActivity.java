@@ -27,7 +27,8 @@ import java.util.Map;
  * Activity that allows event organizers to perform the lottery draw.
  * Randomly selects a specified number of winners from the waitlist and
  * moves them to the "selected" collection. Sends notifications to all
- * entrants about their selection status.
+ * entrants about their selection status using NotificationSender.
+ * Validates draw parameters against waitlist size and max participants.
  */
 public class DrawLotteryActivity extends AppCompatActivity {
 
@@ -68,6 +69,10 @@ public class DrawLotteryActivity extends AppCompatActivity {
         loadEventData();
     }
 
+    /**
+     * Initializes view references and sets up click listeners.
+     * Binds UI elements for event info, waitlist count, and draw button.
+     */
     private void initViews() {
         eventNameText = findViewById(R.id.eventNameText);
         waitlistCountText = findViewById(R.id.waitlistCountText);
@@ -78,6 +83,10 @@ public class DrawLotteryActivity extends AppCompatActivity {
         drawButton.setOnClickListener(v -> performDraw());
     }
 
+    /**
+     * Loads event data from Firestore including name, max participants, and waitlist count.
+     * Initializes the NotificationSender and updates UI with event information.
+     */
     private void loadEventData() {
         db.collection("events")
                 .document(eventId)
@@ -111,6 +120,10 @@ public class DrawLotteryActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Loads the current waitlist count from Firestore.
+     * Updates the waitlist count display and sets the input hint for number of winners.
+     */
     private void loadWaitlistCount() {
         db.collection("events")
                 .document(eventId)
