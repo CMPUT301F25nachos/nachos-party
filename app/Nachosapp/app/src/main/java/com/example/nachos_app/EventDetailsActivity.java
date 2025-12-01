@@ -190,6 +190,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "waitlist");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 
@@ -197,6 +198,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "enrolled");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 
@@ -204,6 +206,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "selected");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 
@@ -211,6 +214,7 @@ public class EventDetailsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, EntrantListActivity.class);
             intent.putExtra("eventId", eventId);
             intent.putExtra("listType", "cancelled");
+            intent.putExtra("eventName", currentEvent.getEventName());
             startActivity(intent);
         });
 

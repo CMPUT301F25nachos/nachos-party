@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -46,7 +47,10 @@ public class EntrantListActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private String eventId;
     private String listType; // "waitlist", "selected", "enrolled", "cancelled"
+    private String eventName;
     private static final int CREATE_FILE_REQUEST_CODE = 1;
+    private EditText notificationEditText;
+    private NotificationSender notifSender;
     private boolean uidsExist = true;
 
     @Override
@@ -58,6 +62,16 @@ public class EntrantListActivity extends AppCompatActivity {
         // Get parameters from intent
         eventId = getIntent().getStringExtra("eventId");
         listType = getIntent().getStringExtra("listType");
+        eventName = getIntent().getStringExtra("eventName");
+
+        // Setup notification sender
+        if (notifSender == null) {
+            notifSender = new NotificationSender(eventId, eventName, db);
+            notifSender.setType(listType);
+        } else {
+            notifSender.setEventName(eventName);
+            notifSender.setType(listType);
+        }
 
         if (eventId == null || listType == null) {
             Toast.makeText(this, "Invalid parameters", Toast.LENGTH_SHORT).show();
@@ -81,6 +95,25 @@ public class EntrantListActivity extends AppCompatActivity {
                     if (uidsExist) {
                         createFile();
                     } else Toast.makeText(v.getContext(), "No entrants to export", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        // Setup notification sending UI for other list types
+        else {
+            // Text box
+            notificationEditText = findViewById(R.id.notificationEditText);
+
+            // Send button
+            findViewById(R.id.send_notification_button).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    String notificationText = notificationEditText.getText().toString().trim();
+                    notifSender.sendListNotifications(notificationText);
+
+                    if (notificationText.isEmpty()) {
+                        notificationEditText.setError("Notification text is required");
+                        notificationEditText.requestFocus();
+                    }
                 }
             });
         }
@@ -162,6 +195,7 @@ public class EntrantListActivity extends AppCompatActivity {
 
                         userDataList.add(data);
                     }
+                    notifSender.setUserIds(userIds);
                     fetchUserProfiles(userIds, userDataList);
                 })
                 .addOnFailureListener(e -> {
