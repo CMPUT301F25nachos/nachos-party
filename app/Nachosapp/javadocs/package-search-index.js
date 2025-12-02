@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.example.nachos_app"},{"l":"com.example.nachos_app.ui.admin"},{"l":"com.example.nachos_app.ui.dashboard"},{"l":"com.example.nachos_app.ui.home"},{"l":"com.example.nachos_app.ui.notifications"},{"l":"com.example.nachos_app.ui.profile"}];updateSearchResults();
